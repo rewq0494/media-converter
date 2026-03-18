@@ -103,7 +103,7 @@ async function handleFileDetect(filePath) {
   $('fileInfo').innerHTML = `<p style="color:var(--text-3);font-size:13px">…</p>`;
 
   const result = await window.api.detectFile(filePath);
-  if (result.error) {
+  if (!result.success) {
     $('dropZone').style.display = '';
     $('fileInfo').style.display = 'none';
     alert(`${t('detectFailed')}：${result.error}`);
@@ -111,8 +111,8 @@ async function handleFileDetect(filePath) {
   }
 
   state.filePath  = filePath;
-  state.fileInfo  = result;
-  renderFileInfo(result);
+  state.fileInfo  = result.data;
+  renderFileInfo(result.data);
 }
 
 function renderFileInfo(info) {
@@ -185,7 +185,7 @@ function renderFormatTabs(activeTab) {
 
 async function renderFormatGrid(tab) {
   const lang = window.i18n.getLang();
-  let formats = await window.api.getFormats() || [];
+  let formats = await window.api.getOutputFormats() || [];
   if (tab === 'audio') formats = formats.filter(f => f.type === 'audio');
   if (tab === 'video') formats = formats.filter(f => f.type === 'video');
 
@@ -273,10 +273,10 @@ function setupStep3Listeners() {
   });
 
   $('anotherBtn').addEventListener('click', resetToStep1);
-  $('quitBtn').addEventListener('click', () => window.api.quit());
+  $('quitBtn').addEventListener('click', () => window.api.quitApp());
 
   $('retryBtn').addEventListener('click', () => { renderSettingsStep(); goToStep(2); });
-  $('quitErrBtn').addEventListener('click', () => window.api.quit());
+  $('quitErrBtn').addEventListener('click', () => window.api.quitApp());
 }
 
 /* ── Progress / Done events ───────────────────────────────────────────────── */
@@ -285,22 +285,12 @@ function setupConvertDoneListener() {
     const bar = $('progressBar');
     const pct = $('progressPct');
     const tim = $('progressTime');
-    if (bar) bar.style.width = `${data.percent}%`;
-    if (pct) pct.textContent = `${data.percent}%`;
+    if (bar) bar.style.width = `${data.pct}%`;
+    if (pct) pct.textContent = `${data.pct}%`;
     if (tim && data.elapsed) tim.textContent = fmtDuration(data.elapsed);
   });
 
-  window.api.onConvertDone(data => {
-    if (data.success) {
-      const el = $('outFilePath');
-      if (el) el.textContent = data.outputPath || '';
-      showStep3('done');
-    } else {
-      const el = $('errorMsg');
-      if (el) el.textContent = data.error || '';
-      showStep3('error');
-    }
-  });
+  // Conversion done is handled via await in startConversion()
 }
 
 function showStep3(mode) {
@@ -320,12 +310,28 @@ async function startConversion() {
   goToStep(3);
   showStep3('progress');
 
-  await window.api.convertFile({
-    inputPath: state.filePath,
-    outputFormat: state.selectedFormat,
-    outputDir: state.outputDir,
-    options: state.advancedOptions,
-  });
+  try {
+    const result = await window.api.startConversion({
+      inputPath: state.filePath,
+      outputDir: state.outputDir,
+      outputExt: state.selectedFormat,
+      options: state.advancedOptions,
+      duration: state.fileInfo?.duration || 0,
+    });
+    if (result.success) {
+      const el = $('outFilePath');
+      if (el) el.textContent = result.outputPath || '';
+      showStep3('done');
+    } else {
+      const el = $('errorMsg');
+      if (el) el.textContent = result.error || '';
+      showStep3('error');
+    }
+  } catch (err) {
+    const el = $('errorMsg');
+    if (el) el.textContent = err.message || String(err);
+    showStep3('error');
+  }
 }
 
 /* ── Util ─────────────────────────────────────────────────────────────────── */
