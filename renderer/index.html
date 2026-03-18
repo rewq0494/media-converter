@@ -36,26 +36,24 @@
     <!-- Step 1: Select File -->
     <div class="step-panel active" id="step1Panel">
       <div class="drop-zone" id="dropZone">
-        <div id="dropZoneInner">
-          <div class="drop-icon">🎬</div>
-          <p class="drop-primary" data-i18n="dropPrimary">拖拉檔案到這裡</p>
-          <p class="drop-or" data-i18n="dropOr">或</p>
-          <button class="btn-primary" id="dropBtn" data-i18n="dropBtn">選擇檔案</button>
-          <p class="drop-hint" data-i18n="dropHint">支援 MP4、MOV、MKV、AVI、MP3、WAV、FLAC、AAC 等</p>
-        </div>
-        <div id="fileInfo" style="display:none"></div>
-        <input type="file" id="fileInput" accept="video/*,audio/*,.mkv,.flac,.ogg,.opus,.wma,.m4a,.webm" style="display:none">
+        <div class="drop-icon">🎬</div>
+        <p class="drop-primary" data-i18n="dropPrimary">拖拉檔案到這裡</p>
+        <p class="drop-or" data-i18n="dropOr">或</p>
+        <button class="btn-primary" id="dropBtn" data-i18n="dropBtn">選擇檔案</button>
+        <p class="drop-hint" data-i18n="dropHint">支援 MP4、MOV、MKV、AVI、MP3、WAV、FLAC、AAC 等</p>
       </div>
+      <div id="fileInfo"></div>
+      <input type="file" id="fileInput" accept="video/*,audio/*,.mkv,.flac,.ogg,.opus,.wma,.m4a,.webm" style="display:none">
     </div>
 
     <!-- Step 2: Settings -->
     <div class="step-panel" id="step2Panel">
-      <h2 class="section-title" data-i18n="formatTitle">輸出格式</h2>
+      <p class="section-title" data-i18n="formatTitle">輸出格式</p>
       <div class="format-tabs" id="formatTabs"></div>
       <div class="format-grid" id="formatGrid"></div>
-      <div class="advanced-panel" id="advancedPanel"></div>
+      <div id="advancedPanel"></div>
       <div class="output-dir-section">
-        <span class="section-title" data-i18n="outputDirTitle">儲存到</span>
+        <p class="section-title" data-i18n="outputDirTitle">儲存到</p>
         <div class="output-dir-row">
           <span class="output-dir-display" id="outputDirDisplay">~/Downloads</span>
           <button class="btn-secondary btn-sm" id="changeDirBtn" data-i18n="outputDirChange">更改</button>
@@ -69,10 +67,9 @@
 
     <!-- Step 3: Progress / Done / Error -->
     <div class="step-panel" id="step3Panel">
-      <!-- Progress -->
-      <div class="progress-section" id="progressSection">
-        <div class="progress-icon spin">⚙</div>
-        <h2 class="progress-title" data-i18n="progressTitle">轉換中…</h2>
+      <div class="center-section" id="progressSection">
+        <div class="prog-icon spin">⚙</div>
+        <h2 class="prog-title" data-i18n="progressTitle">轉換中…</h2>
         <div class="progress-bar-wrap">
           <div class="progress-bar" id="progressBar"></div>
         </div>
@@ -82,10 +79,10 @@
         </div>
         <button class="btn-secondary" id="cancelBtn" data-i18n="btnCancel">取消</button>
       </div>
-      <!-- Done -->
-      <div class="done-section" id="doneSection" style="display:none">
-        <div class="done-icon">✓</div>
-        <h2 class="done-title" data-i18n="doneTitle">轉換完成！</h2>
+
+      <div class="center-section" id="doneSection" style="display:none">
+        <div class="result-icon success-icon">✓</div>
+        <h2 class="result-title success-text" data-i18n="doneTitle">轉換完成！</h2>
         <p class="out-file-path" id="outFilePath"></p>
         <div class="done-actions">
           <button class="btn-secondary" id="openFolderBtn" data-i18n="btnOpenFolder">📁 開啟資料夾</button>
@@ -93,10 +90,10 @@
           <button class="btn-danger" id="quitBtn" data-i18n="btnQuit">關閉應用程式</button>
         </div>
       </div>
-      <!-- Error -->
-      <div class="error-section" id="errorSection" style="display:none">
-        <div class="done-icon error-icon">✗</div>
-        <h2 class="done-title" data-i18n="errorTitle">轉換失敗</h2>
+
+      <div class="center-section" id="errorSection" style="display:none">
+        <div class="result-icon error-icon">✗</div>
+        <h2 class="result-title error-text" data-i18n="errorTitle">轉換失敗</h2>
         <p class="error-msg" id="errorMsg"></p>
         <div class="done-actions">
           <button class="btn-secondary" id="retryBtn" data-i18n="btnRetry">← 重試</button>
@@ -106,7 +103,6 @@
     </div>
 
   </div>
-
   <script src="i18n.js"></script>
   <script src="renderer.js"></script>
 </body>
