@@ -1,3 +1,7 @@
+/* ── IIFE wrapper to avoid global scope collision with i18n.js ──────────── */
+(function () {
+'use strict';
+
 /* ── State ────────────────────────────────────────────────────────────────── */
 const state = {
   step: 1,
@@ -355,3 +359,5 @@ function esc(s) {
 function filePart(p) {
   return p ? p.split(/[/\\]/).pop() : '';
 }
+
+})(); // end IIFE

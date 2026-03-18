@@ -27,6 +27,12 @@ function createWindow() {
 
   mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 
+  // Debug: forward renderer console to main process stdout
+  mainWindow.webContents.on('console-message', (_e, level, msg, line, sourceId) => {
+    const tag = ['LOG','WARN','ERR'][level] || 'LOG';
+    console.log(`[Renderer ${tag}] ${msg} (${sourceId}:${line})`);
+  });
+
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
   });
