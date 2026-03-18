@@ -194,11 +194,13 @@ async function renderFormatGrid(tab) {
   if (tab === 'video') formats = formats.filter(f => f.type === 'video');
 
   $('formatGrid').innerHTML = formats.map(f => {
-    const desc = (lang === 'en' && f.descriptionEn) ? f.descriptionEn : f.description;
+    const short = (lang === 'en' && f.shortDescEn) ? f.shortDescEn : (f.shortDesc || '');
+    const full  = (lang === 'en' && f.descriptionEn) ? f.descriptionEn : f.description;
     return `<div class="format-card${state.selectedFormat === f.ext ? ' selected' : ''}" data-ext="${f.ext}">
       <span class="format-ext">.${f.ext}</span>
       <span class="format-label">${f.label}</span>
-      <span class="format-desc">${esc(desc || '')}</span>
+      <span class="format-tag">${esc(short)}</span>
+      <div class="format-tooltip">${esc(full)}</div>
     </div>`;
   }).join('');
 

@@ -2,6 +2,7 @@ const FORMATS = [
   // ── 音訊 ──────────────────────────────────────────────────────────────
   {
     ext: 'mp3', label: 'MP3', type: 'audio',
+    shortDesc: '通用音訊', shortDescEn: 'Universal',
     description: '最廣泛相容的音訊格式，適合音樂、播客、一般用途',
     descriptionEn: 'Most widely compatible audio format, great for music, podcasts, and general use',
     preset: {
@@ -16,6 +17,7 @@ const FORMATS = [
   },
   {
     ext: 'wav', label: 'WAV', type: 'audio',
+    shortDesc: '無損音質', shortDescEn: 'Lossless',
     description: '無壓縮 PCM 音訊，音質最佳，適合語音辨識、音訊剪輯',
     descriptionEn: 'Uncompressed PCM audio, best quality, ideal for speech recognition and audio editing',
     preset: {
@@ -30,6 +32,7 @@ const FORMATS = [
   },
   {
     ext: 'aac', label: 'AAC', type: 'audio',
+    shortDesc: 'Apple 推薦', shortDescEn: 'Apple Rec.',
     description: '現代高效壓縮格式，Apple 裝置原生支援，同 bitrate 比 MP3 音質更好',
     descriptionEn: 'Modern efficient format, native on Apple devices, better quality than MP3 at same bitrate',
     preset: {
@@ -44,6 +47,7 @@ const FORMATS = [
   },
   {
     ext: 'flac', label: 'FLAC', type: 'audio',
+    shortDesc: '無損壓縮', shortDescEn: 'Lossless Zip',
     description: '無損壓縮格式，音質等同原始，檔案比 WAV 小約 50%',
     descriptionEn: 'Lossless compression, same quality as original, ~50% smaller than WAV',
     preset: {
@@ -58,6 +62,7 @@ const FORMATS = [
   },
   {
     ext: 'ogg', label: 'OGG', type: 'audio',
+    shortDesc: '開源・遊戲', shortDescEn: 'Open / Game',
     description: '開源格式，音質優於 MP3，適合遊戲音效、網頁音訊',
     descriptionEn: 'Open-source format, better quality than MP3, great for game audio and web',
     preset: {
@@ -71,6 +76,7 @@ const FORMATS = [
   },
   {
     ext: 'm4a', label: 'M4A', type: 'audio',
+    shortDesc: 'iTunes 標準', shortDescEn: 'iTunes Std.',
     description: 'AAC 封裝於 MPEG-4 容器，iTunes/Apple Music 標準格式',
     descriptionEn: 'AAC in MPEG-4 container, standard for iTunes/Apple Music',
     preset: {
@@ -84,6 +90,7 @@ const FORMATS = [
   },
   {
     ext: 'opus', label: 'Opus', type: 'audio',
+    shortDesc: '通話・串流', shortDescEn: 'Voice / Stream',
     description: '最現代的開源音訊格式，低延遲、高效率，適合通話/串流',
     descriptionEn: 'The most modern open-source audio codec, low latency, ideal for calls and streaming',
     preset: {
@@ -97,6 +104,7 @@ const FORMATS = [
   },
   {
     ext: 'wma', label: 'WMA', type: 'audio',
+    shortDesc: 'Windows 專用', shortDescEn: 'Windows',
     description: 'Windows Media Audio，Windows 系統相容格式',
     descriptionEn: 'Windows Media Audio, native Windows compatibility',
     preset: {
@@ -112,6 +120,7 @@ const FORMATS = [
   // ── 影片 ──────────────────────────────────────────────────────────────
   {
     ext: 'mp4', label: 'MP4', type: 'video',
+    shortDesc: '通用影片', shortDescEn: 'Universal',
     description: '最廣泛相容的影片格式，適合所有裝置與平台播放',
     descriptionEn: 'Most widely compatible video format, plays on virtually all devices and platforms',
     preset: {
@@ -127,6 +136,7 @@ const FORMATS = [
   },
   {
     ext: 'mov', label: 'MOV', type: 'video',
+    shortDesc: 'Apple 原生', shortDescEn: 'Apple Native',
     description: 'Apple QuickTime 格式，macOS 與 iOS 原生支援',
     descriptionEn: 'Apple QuickTime format, native on macOS and iOS',
     preset: {
@@ -141,6 +151,7 @@ const FORMATS = [
   },
   {
     ext: 'mkv', label: 'MKV', type: 'video',
+    shortDesc: '多軌・電影', shortDescEn: 'Multi-track',
     description: 'Matroska 容器，支援多字幕/多音軌，適合電影備份',
     descriptionEn: 'Matroska container, supports multiple subtitles/audio tracks, great for movie archiving',
     preset: {
@@ -156,6 +167,7 @@ const FORMATS = [
   },
   {
     ext: 'webm', label: 'WebM', type: 'video',
+    shortDesc: '網頁最佳', shortDescEn: 'Web Best',
     description: '網頁開源格式，VP9/AV1 編碼，HTML5 video 原生支援',
     descriptionEn: 'Open-source web format, VP9/AV1 encoding, native HTML5 video support',
     preset: {
@@ -170,6 +182,7 @@ const FORMATS = [
   },
   {
     ext: 'avi', label: 'AVI', type: 'video',
+    shortDesc: '舊裝置相容', shortDescEn: 'Legacy',
     description: '傳統 Windows 影片格式，相容舊裝置',
     descriptionEn: 'Classic Windows video format, compatible with legacy devices',
     preset: {
@@ -184,6 +197,7 @@ const FORMATS = [
   },
   {
     ext: 'gif', label: 'GIF', type: 'video',
+    shortDesc: '動圖・分享', shortDescEn: 'Animated',
     description: '動態圖片格式，適合短片段轉為可分享的動圖',
     descriptionEn: 'Animated image format, perfect for converting short clips into shareable animations',
     preset: {
