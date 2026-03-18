@@ -48,15 +48,28 @@ Media Converter 是一個**桌面應用程式**，完全在本機運行。上傳
 
 | 下載 | 適用 |
 |---|---|
-| [Media.Converter-1.0.0-arm64.dmg](https://github.com/rewq0494/media-converter/releases/download/v1.0.0/Media.Converter-1.0.0-arm64.dmg) | **macOS Apple Silicon（M1/M2/M3/M4）** ← 大多數人選這個 |
-| [Media.Converter-1.0.0.dmg](https://github.com/rewq0494/media-converter/releases/download/v1.0.0/Media.Converter-1.0.0.dmg) | macOS Intel |
+| [macOS Apple Silicon (.dmg)](https://github.com/rewq0494/media-converter/releases/download/v1.1.0/Media-Converter-macOS-Apple-Silicon.dmg) | **M1 / M2 / M3 / M4** ← 大多數人選這個 |
+| [macOS Intel (.dmg)](https://github.com/rewq0494/media-converter/releases/download/v1.1.0/Media-Converter-macOS-Intel.dmg) | 較舊的 Mac |
+| [Windows 64-bit (.exe)](https://github.com/rewq0494/media-converter/releases/download/v1.1.0/Media-Converter-Windows-Setup.exe) | Windows 10 以上 |
 
-**安裝步驟：**
-1. 下載對應你 Mac 的 `.dmg` 檔（不確定就選 arm64）
+**macOS 安裝步驟：**
+1. 下載對應你 Mac 的 `.dmg` 檔（不確定就選 Apple Silicon）
 2. 雙擊開啟 DMG，將 **Media Converter.app** 拖入「應用程式」資料夾
-3. 第一次開啟時若出現「無法驗證開發者」提示：**系統設定 → 隱私權與安全性 → 點選「仍要開啟」**
+3. 第一次開啟時若出現 **「Apple 無法驗證」** 提示，請用以下任一方式解決：
 
-> **Windows** 版本需自行從原始碼建置（`npm run build:win`），未來會提供預建版本。
+   **方法一（推薦）：** 打開終端機，執行一次：
+   ```bash
+   xattr -cr /Applications/Media\ Converter.app
+   ```
+
+   **方法二：** 前往 **系統設定 → 隱私權與安全性** → 往下滾到「安全性」→ 點選 **「仍要打開」**
+
+> ⚠️ 這是因為本 App 沒有 Apple 付費開發者帳號簽名，是所有開源 macOS 桌面應用的常見現象，並非惡意軟體。
+
+**Windows 安裝步驟：**
+1. 下載 `.exe` 安裝檔
+2. 雙擊執行安裝程式
+3. 若出現 SmartScreen 警告，點選「其他資訊」→「仍要執行」
 
 ### 🛠 開發環境設定
 
@@ -181,15 +194,28 @@ Download the latest release from [Releases](https://github.com/rewq0494/media-co
 
 | Download | Platform |
 |---|---|
-| [Media.Converter-1.0.0-arm64.dmg](https://github.com/rewq0494/media-converter/releases/download/v1.0.0/Media.Converter-1.0.0-arm64.dmg) | **macOS Apple Silicon (M1/M2/M3/M4)** ← most users |
-| [Media.Converter-1.0.0.dmg](https://github.com/rewq0494/media-converter/releases/download/v1.0.0/Media.Converter-1.0.0.dmg) | macOS Intel |
+| [macOS Apple Silicon (.dmg)](https://github.com/rewq0494/media-converter/releases/download/v1.1.0/Media-Converter-macOS-Apple-Silicon.dmg) | **M1 / M2 / M3 / M4** ← most users |
+| [macOS Intel (.dmg)](https://github.com/rewq0494/media-converter/releases/download/v1.1.0/Media-Converter-macOS-Intel.dmg) | Older Macs |
+| [Windows 64-bit (.exe)](https://github.com/rewq0494/media-converter/releases/download/v1.1.0/Media-Converter-Windows-Setup.exe) | Windows 10+ |
 
-**Installation:**
-1. Download the `.dmg` for your Mac (if unsure, pick arm64)
+**macOS Installation:**
+1. Download the `.dmg` for your Mac (if unsure, pick Apple Silicon)
 2. Open the DMG, drag **Media Converter.app** to Applications
-3. First launch: if macOS says "unverified developer" → **System Settings → Privacy & Security → Open Anyway**
+3. First launch: if you see **"Apple cannot verify"** warning, fix it with either:
 
-> **Windows** builds require building from source (`npm run build:win`) — pre-built `.exe` coming soon.
+   **Option A (recommended):** Open Terminal and run once:
+   ```bash
+   xattr -cr /Applications/Media\ Converter.app
+   ```
+
+   **Option B:** Go to **System Settings → Privacy & Security** → scroll to "Security" → click **"Open Anyway"**
+
+> ⚠️ This happens because the app isn't signed with a paid Apple Developer account — common for all open-source macOS desktop apps. It is NOT malware.
+
+**Windows Installation:**
+1. Download the `.exe` installer
+2. Double-click to install
+3. If SmartScreen warning appears, click "More info" → "Run anyway"
 
 ### 🛠 Development Setup
 

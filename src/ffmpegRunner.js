@@ -1,5 +1,9 @@
 const { spawn } = require('child_process');
-const ffmpegPath = require('ffmpeg-static');
+
+// In packaged Electron, ffmpeg-static resolves inside app.asar (a file, not a dir).
+// We must redirect to app.asar.unpacked where the real binary lives.
+function fixAsar(p) { return p.replace('app.asar', 'app.asar.unpacked'); }
+const ffmpegPath = fixAsar(require('ffmpeg-static'));
 
 const AUDIO_EXTS = new Set(['mp3','wav','aac','flac','ogg','m4a','opus','wma']);
 
