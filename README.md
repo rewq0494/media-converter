@@ -96,6 +96,9 @@ npm run build:mac
 
 # Windows（x64）
 npm run build:win
+
+# 整理 dist/：保留發佈檔名，移除重複與非必要產物
+npm run dist:prune
 ```
 
 建置結果輸出至 `dist/` 資料夾。
@@ -232,6 +235,7 @@ npm test      # run 46 TDD tests
 ```bash
 npm run build:mac   # macOS (arm64 + x64)
 npm run build:win   # Windows (x64)
+npm run dist:prune  # keep only release-ready artifacts
 ```
 
 Output goes to `dist/`.

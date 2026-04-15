@@ -42,7 +42,6 @@ npm run build:mac
 產出（在 `dist/` 目錄）：
 - `Media Converter-{version}-arm64.dmg` — Apple Silicon
 - `Media Converter-{version}.dmg` — Intel x64
-- 對應的 `.zip` 和 `.blockmap` 檔案
 
 ### Windows 建置（從 macOS 交叉編譯）
 
@@ -86,10 +85,8 @@ open "/Applications/Media Converter.app"
 ```bash
 VERSION="1.2.0"  # 替換為實際版本號
 
-# 1. 複製並重新命名檔案
-cp "dist/Media Converter-${VERSION}-arm64.dmg" "dist/Media-Converter-macOS-Apple-Silicon.dmg"
-cp "dist/Media Converter-${VERSION}.dmg" "dist/Media-Converter-macOS-Intel.dmg"
-cp "dist/Media Converter Setup ${VERSION}.exe" "dist/Media-Converter-Windows-Setup.exe"
+# 1. 重新命名並移除多餘產物
+npm run dist:prune
 
 # 2. 建立 git tag
 git tag "v${VERSION}" HEAD
