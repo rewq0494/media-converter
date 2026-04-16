@@ -38,7 +38,7 @@ Media Converter 是一個**桌面應用程式**，完全在本機運行。上傳
 
 ### 📋 系統需求
 
-- **macOS** 11+（Apple Silicon 與 Intel）或 **Windows** 10+
+- **macOS** 11+（Apple Silicon）或 **Windows** 10+
 - Node.js 18+（僅開發環境需要）
 - 無需另外安裝 ffmpeg — 已內建執行檔
 
@@ -48,12 +48,11 @@ Media Converter 是一個**桌面應用程式**，完全在本機運行。上傳
 
 | 下載 | 適用 |
 |---|---|
-| [macOS Apple Silicon (.dmg)](https://github.com/rewq0494/media-converter/releases/download/v1.1.0/Media-Converter-macOS-Apple-Silicon.dmg) | **M1 / M2 / M3 / M4** ← 大多數人選這個 |
-| [macOS Intel (.dmg)](https://github.com/rewq0494/media-converter/releases/download/v1.1.0/Media-Converter-macOS-Intel.dmg) | 較舊的 Mac |
+| [macOS Apple Silicon (.dmg)](https://github.com/rewq0494/media-converter/releases/download/v1.1.0/Media-Converter-macOS-Apple-Silicon.dmg) | **M1 / M2 / M3 / M4** |
 | [Windows 64-bit (.exe)](https://github.com/rewq0494/media-converter/releases/download/v1.1.0/Media-Converter-Windows-Setup.exe) | Windows 10 以上 |
 
 **macOS 安裝步驟：**
-1. 下載對應你 Mac 的 `.dmg` 檔（不確定就選 Apple Silicon）
+1. 下載 `macOS Apple Silicon (.dmg)` 安裝檔
 2. 雙擊開啟 DMG，將 **Media Converter.app** 拖入「應用程式」資料夾
 3. 第一次開啟時若出現 **「Apple 無法驗證」** 提示，請用以下任一方式解決：
 
@@ -91,7 +90,7 @@ npm test
 ### 📦 打包建置
 
 ```bash
-# macOS（arm64 + x64）
+# macOS（Apple Silicon / arm64）
 npm run build:mac
 
 # Windows（x64）
@@ -187,7 +186,7 @@ No subscriptions. No watermarks. No internet required.
 
 ### 📋 Requirements
 
-- **macOS** 11+ (Apple Silicon & Intel) or **Windows** 10+
+- **macOS** 11+ (Apple Silicon) or **Windows** 10+
 - Node.js 18+ (for development only)
 - No ffmpeg installation required — binaries are bundled
 
@@ -197,12 +196,11 @@ Download the latest release from [Releases](https://github.com/rewq0494/media-co
 
 | Download | Platform |
 |---|---|
-| [macOS Apple Silicon (.dmg)](https://github.com/rewq0494/media-converter/releases/download/v1.1.0/Media-Converter-macOS-Apple-Silicon.dmg) | **M1 / M2 / M3 / M4** ← most users |
-| [macOS Intel (.dmg)](https://github.com/rewq0494/media-converter/releases/download/v1.1.0/Media-Converter-macOS-Intel.dmg) | Older Macs |
+| [macOS Apple Silicon (.dmg)](https://github.com/rewq0494/media-converter/releases/download/v1.1.0/Media-Converter-macOS-Apple-Silicon.dmg) | **M1 / M2 / M3 / M4** |
 | [Windows 64-bit (.exe)](https://github.com/rewq0494/media-converter/releases/download/v1.1.0/Media-Converter-Windows-Setup.exe) | Windows 10+ |
 
 **macOS Installation:**
-1. Download the `.dmg` for your Mac (if unsure, pick Apple Silicon)
+1. Download the `macOS Apple Silicon (.dmg)` installer
 2. Open the DMG, drag **Media Converter.app** to Applications
 3. First launch: if you see **"Apple cannot verify"** warning, fix it with either:
 
@@ -233,7 +231,7 @@ npm test      # run 46 TDD tests
 ### 📦 Build
 
 ```bash
-npm run build:mac   # macOS (arm64 + x64)
+npm run build:mac   # macOS (Apple Silicon / arm64)
 npm run build:win   # Windows (x64)
 npm run dist:prune  # keep only release-ready artifacts
 ```

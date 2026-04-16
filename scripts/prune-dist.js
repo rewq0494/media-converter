@@ -23,6 +23,11 @@ const renamePairs = [
   }
 ];
 
+const legacyArtifacts = new Set([
+  `Media Converter-${version}.dmg`,
+  'Media-Converter-macOS-Intel.dmg'
+]);
+
 const pruneMatchers = [
   /^\.DS_Store$/,
   /^builder-debug\.yml$/,
@@ -133,14 +138,12 @@ async function renameArtifacts() {
     if (fs.existsSync(targetPath)) {
       const identical = await areFilesIdentical(sourcePath, targetPath);
 
-      if (!identical) {
-        throw new Error(
-          `Cannot reconcile ${pair.source} and ${pair.target}: files differ`
-        );
+      if (identical) {
+        reclaimedBytes += removeEntry(sourcePath);
+        continue;
       }
 
-      reclaimedBytes += removeEntry(sourcePath);
-      continue;
+      reclaimedBytes += removeEntry(targetPath);
     }
 
     fs.renameSync(sourcePath, targetPath);
@@ -157,7 +160,7 @@ function pruneExtraArtifacts() {
   }
 
   for (const entry of fs.readdirSync(distDir)) {
-    if (!pruneMatchers.some((matcher) => matcher.test(entry))) {
+    if (!legacyArtifacts.has(entry) && !pruneMatchers.some((matcher) => matcher.test(entry))) {
       continue;
     }
 

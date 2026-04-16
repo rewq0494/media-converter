@@ -41,7 +41,6 @@ npm run build:mac
 
 產出（在 `dist/` 目錄）：
 - `Media Converter-{version}-arm64.dmg` — Apple Silicon
-- `Media Converter-{version}.dmg` — Intel x64
 
 ### Windows 建置（從 macOS 交叉編譯）
 
@@ -77,7 +76,6 @@ open "/Applications/Media Converter.app"
 | 平台 | 檔名 |
 |------|------|
 | macOS Apple Silicon | `Media-Converter-macOS-Apple-Silicon.dmg` |
-| macOS Intel | `Media-Converter-macOS-Intel.dmg` |
 | Windows | `Media-Converter-Windows-Setup.exe` |
 
 ### 完整發佈指令
@@ -95,7 +93,6 @@ git push origin "v${VERSION}"
 # 3. 建立 GitHub Release
 gh release create "v${VERSION}" \
   "dist/Media-Converter-macOS-Apple-Silicon.dmg" \
-  "dist/Media-Converter-macOS-Intel.dmg" \
   "dist/Media-Converter-Windows-Setup.exe" \
   --title "v${VERSION} — 標題" \
   --notes-file release-notes.md
@@ -114,7 +111,6 @@ gh release view "v${VERSION}" --json assets -q '.assets[].name'
 | 平台 | 檔案 |
 |------|------|
 | 🍎 macOS (Apple Silicon M1/M2/M3/M4) | `Media-Converter-macOS-Apple-Silicon.dmg` |
-| 🍎 macOS (Intel) | `Media-Converter-macOS-Intel.dmg` |
 | 🪟 Windows (64-bit) | `Media-Converter-Windows-Setup.exe` |
 
 ### 修復內容 / Fixes
@@ -129,7 +125,7 @@ gh release view "v${VERSION}" --json assets -q '.assets[].name'
 
 發佈後必須更新 `README.md` 中的：
 
-1. **下載連結** — 6 個連結（中文段落 3 個 + 英文段落 3 個），版本號替換
+1. **下載連結** — 4 個連結（中文段落 2 個 + 英文段落 2 個），版本號替換
 2. **測試數量** — 若測試數量有變更
 
 搜尋替換指令：
@@ -144,7 +140,7 @@ sed -i '' "s/v1.1.0/v${VERSION}/g" README.md
 - [ ] macOS 建置成功 + 手動轉換測試通過
 - [ ] Windows 建置成功
 - [ ] git tag 指向正確的 commit（最新的）
-- [ ] GitHub Release 三個檔案都上傳成功
+- [ ] GitHub Release 兩個檔案都上傳成功
 - [ ] 下載連結實際可點擊下載（檔名完全一致）
 - [ ] README.md 版本號已更新
 - [ ] Release notes 包含所有變更
