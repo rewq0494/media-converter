@@ -7,6 +7,27 @@ const ffmpegPath = fixAsar(require('ffmpeg-static'));
 
 const AUDIO_EXTS = new Set(['mp3','wav','aac','flac','ogg','m4a','opus','wma']);
 
+function buildVideoFilters(options) {
+  const filters = [];
+
+  if (options.resolution && options.resolution !== 'source') {
+    filters.push(`scale=-2:${Number(options.resolution)}:flags=lanczos`);
+  }
+
+  if (options.fps && options.fps !== 'source') {
+    const fps = Number(options.fps);
+    if (options.frameMode === 'motion') {
+      filters.push(`minterpolate=fps=${fps}:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1`);
+    } else if (options.frameMode === 'blend') {
+      filters.push(`minterpolate=fps=${fps}:mi_mode=blend`);
+    } else {
+      filters.push(`fps=${fps}`);
+    }
+  }
+
+  return filters;
+}
+
 function buildFFmpegArgs({ inputPath, outputPath, outputExt, options = {} }) {
   const args = ['-y', '-i', inputPath, '-progress', 'pipe:1', '-nostats'];
   const isAudio = AUDIO_EXTS.has(outputExt);
@@ -37,6 +58,8 @@ function buildFFmpegArgs({ inputPath, outputPath, outputExt, options = {} }) {
       const scale = options.scale || 480;
       args.push('-vf', `fps=${fps},scale=${scale}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`);
     } else {
+      const filters = buildVideoFilters(options);
+      if (filters.length) args.push('-vf', filters.join(','));
       if (options.videoCodec) args.push('-vcodec', options.videoCodec);
       if (options.audioCodec) args.push('-acodec', options.audioCodec);
       if (options.crf != null) args.push('-crf', String(options.crf));
@@ -99,4 +122,4 @@ function runFFmpeg({ inputPath, outputPath, outputExt, options, duration, onProg
   });
 }
 
-module.exports = { buildFFmpegArgs, parseProgress, runFFmpeg };
+module.exports = { buildVideoFilters, buildFFmpegArgs, parseProgress, runFFmpeg };

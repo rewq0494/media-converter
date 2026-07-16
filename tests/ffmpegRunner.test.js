@@ -1,4 +1,4 @@
-const { buildFFmpegArgs, parseProgress } = require('../src/ffmpegRunner');
+const { buildVideoFilters, buildFFmpegArgs, parseProgress } = require('../src/ffmpegRunner');
 
 describe('ffmpegRunner - buildFFmpegArgs', () => {
   test('音訊轉 mp3', () => {
@@ -30,6 +30,27 @@ describe('ffmpegRunner - buildFFmpegArgs', () => {
     expect(args).toContain('aac');
     expect(args).toContain('-crf');
     expect(args).toContain('23');
+  });
+
+  test('影片可選擇解析度與固定 FPS', () => {
+    const filters = buildVideoFilters({ resolution: '1080', fps: '60', frameMode: 'duplicate' });
+    expect(filters).toEqual(['scale=-2:1080:flags=lanczos', 'fps=60']);
+  });
+
+  test('掉幀修復可使用動態補幀', () => {
+    const args = buildFFmpegArgs({
+      inputPath: '/in/stutter.mov',
+      outputPath: '/out/repaired.mp4',
+      outputExt: 'mp4',
+      options: { videoCodec: 'libx264', resolution: '1080', fps: '60', frameMode: 'motion' }
+    });
+    expect(args).toContain('-vf');
+    expect(args.join(' ')).toContain('scale=-2:1080');
+    expect(args.join(' ')).toContain('minterpolate=fps=60:mi_mode=mci');
+  });
+
+  test('保留原始解析度與 FPS 時不增加濾鏡', () => {
+    expect(buildVideoFilters({ resolution: 'source', fps: 'source', frameMode: 'motion' })).toEqual([]);
   });
 
   test('影片抽取音訊為 wav', () => {

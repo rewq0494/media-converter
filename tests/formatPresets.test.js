@@ -37,6 +37,8 @@ describe('formatPresets', () => {
     expect(preset.videoCodec).toBeDefined();
     expect(preset.audioCodec).toBeDefined();
     expect(preset.crf).toBeDefined();
+    const keys = preset.advanced.map(option => option.key);
+    expect(keys).toEqual(expect.arrayContaining(['resolution', 'fps', 'frameMode']));
   });
 
   test('getPreset 未知格式回傳 null', () => {

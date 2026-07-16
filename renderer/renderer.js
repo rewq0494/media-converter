@@ -231,13 +231,21 @@ async function renderAdvancedPanel() {
   if (preset.advanced?.length) {
     html += `<details class="advanced-details"><summary>${t('advancedToggle')}</summary><div class="advanced-opts">`;
     preset.advanced.forEach(opt => {
+      if (!(opt.key in state.advancedOptions)) state.advancedOptions[opt.key] = opt.default;
       const label = (lang === 'en' && opt.labelEn) ? opt.labelEn : opt.label;
       const hint  = (lang === 'en' && opt.hintEn)  ? opt.hintEn  : opt.hint;
       const val   = state.advancedOptions[opt.key] ?? opt.default;
+      const options = (opt.options || []).map(option => {
+        if (typeof option !== 'object') return { value: option, label: option };
+        return {
+          value: option.value,
+          label: (lang === 'en' && option.labelEn) ? option.labelEn : option.label,
+        };
+      });
       html += `<div class="opt-row">
         <label class="opt-label">${esc(label)}</label>
         <select class="opt-select" data-key="${opt.key}">
-          ${(opt.options || []).map(o => `<option value="${o}"${o == val ? ' selected' : ''}>${o}</option>`).join('')}
+          ${options.map(o => `<option value="${esc(o.value)}"${o.value == val ? ' selected' : ''}>${esc(o.label)}</option>`).join('')}
         </select>
         ${hint ? `<span class="opt-hint">${esc(hint)}</span>` : ''}
       </div>`;

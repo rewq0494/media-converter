@@ -29,7 +29,8 @@ Media Converter 是一個**桌面應用程式**，完全在本機運行。上傳
 | **14 種輸出格式** | MP3、WAV、AAC、FLAC、OGG、M4A、Opus、WMA、MP4、MOV、MKV、WebM、AVI、GIF |
 | **自動辨識檔案** | ffprobe 自動偵測編碼、解析度、取樣率、時長 |
 | **智慧預設參數** | 每種格式都附帶推薦設定與清楚說明 |
-| **進階調整** | 位元率、CRF、取樣率、編碼選擇 — 全部可選 |
+| **進階調整** | 位元率、CRF、取樣率、編碼、解析度與 FPS 選擇 |
+| **掉幀修復** | 支援固定幀率、混合補幀與動態補幀 |
 | **即時進度** | 即時進度條 + 已用時間 |
 | **自訂輸出路徑** | 精確選擇轉換結果的儲存位置 |
 | **雙語介面** | 可隨時切換繁體中文與英文 |
@@ -177,7 +178,8 @@ No subscriptions. No watermarks. No internet required.
 | **14 output formats** | MP3, WAV, AAC, FLAC, OGG, M4A, Opus, WMA, MP4, MOV, MKV, WebM, AVI, GIF |
 | **Auto file detection** | ffprobe identifies codec, resolution, sample rate, duration automatically |
 | **Smart presets** | Every format ships with recommended settings and a clear description |
-| **Advanced controls** | Bitrate, CRF, sample rate, codec selection — all optional |
+| **Advanced controls** | Bitrate, CRF, sample rate, codec, resolution, and FPS |
+| **Dropped-frame repair** | Constant FPS, blend interpolation, and motion interpolation modes |
 | **Real-time progress** | Live progress bar with elapsed time |
 | **Custom output folder** | Choose exactly where converted files are saved |
 | **i18n** | Switch between 繁體中文 and English at any time |

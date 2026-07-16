@@ -1,3 +1,41 @@
+const VIDEO_OUTPUT_OPTIONS = [
+  {
+    key: 'resolution', label: '輸出解析度', labelEn: 'Output Resolution', default: 'source',
+    options: [
+      { value: 'source', label: '保留原始', labelEn: 'Keep source' },
+      { value: '2160', label: '4K (2160p)', labelEn: '4K (2160p)' },
+      { value: '1440', label: '2K (1440p)', labelEn: '2K (1440p)' },
+      { value: '1080', label: 'Full HD (1080p)', labelEn: 'Full HD (1080p)' },
+      { value: '720', label: 'HD (720p)', labelEn: 'HD (720p)' },
+      { value: '480', label: 'SD (480p)', labelEn: 'SD (480p)' },
+    ],
+    hint: '依原始比例縮放', hintEn: 'Scales while preserving aspect ratio',
+  },
+  {
+    key: 'fps', label: '輸出幀率 (FPS)', labelEn: 'Output Frame Rate (FPS)', default: 'source',
+    options: [
+      { value: 'source', label: '保留原始', labelEn: 'Keep source' },
+      { value: '24', label: '24 FPS', labelEn: '24 FPS' },
+      { value: '30', label: '30 FPS', labelEn: '30 FPS' },
+      { value: '60', label: '60 FPS', labelEn: '60 FPS' },
+    ],
+    hint: '調高 FPS 不會自動還原缺失畫面', hintEn: 'A higher FPS alone cannot restore missing frames',
+  },
+  {
+    key: 'frameMode', label: '幀率處理', labelEn: 'Frame Rate Processing', default: 'duplicate',
+    options: [
+      { value: 'duplicate', label: '固定幀率（快速）', labelEn: 'Constant FPS (fast)' },
+      { value: 'blend', label: '混合補幀（中等）', labelEn: 'Blend interpolation (medium)' },
+      { value: 'motion', label: '動態補幀（慢速）', labelEn: 'Motion interpolation (slow)' },
+    ],
+    hint: '動態補幀適合掉幀影片，但快速移動可能產生殘影', hintEn: 'Motion interpolation helps dropped-frame video but may create artifacts',
+  },
+];
+
+function videoAdvanced(options) {
+  return [...options, ...VIDEO_OUTPUT_OPTIONS];
+}
+
 const FORMATS = [
   // ── 音訊 ──────────────────────────────────────────────────────────────
   {
@@ -127,11 +165,11 @@ const FORMATS = [
       videoCodec: 'libx264', audioCodec: 'aac', crf: 23, audioBitrate: '192k',
       description: 'H.264 + AAC，CRF 23 — 相容性最佳、品質與大小平衡',
       descriptionEn: 'H.264 + AAC, CRF 23 — Best compatibility, balanced quality and size',
-      advanced: [
+      advanced: videoAdvanced([
         { key: 'crf', label: '視訊品質 (CRF)', labelEn: 'Video Quality (CRF)', default: 23, options: [18,20,23,26,28,30], hint: '18=近無損(大), 23=標準, 30=較低品質(小)', hintEn: '18=near lossless(large), 23=standard, 30=lower quality(small)' },
         { key: 'videoCodec', label: '視訊編碼', labelEn: 'Video Codec', default: 'libx264', options: ['libx264','libx265','libsvtav1'], hint: 'x264=相容, x265=更小50%, AV1=最新最小', hintEn: 'x264=compatible, x265=50% smaller, AV1=most efficient' },
         { key: 'audioBitrate', label: '音訊位元率', labelEn: 'Audio Bitrate', default: '192k', options: ['128k','192k','256k'], hint: '', hintEn: '' },
-      ]
+      ])
     }
   },
   {
@@ -143,10 +181,10 @@ const FORMATS = [
       videoCodec: 'libx264', audioCodec: 'aac', crf: 22, audioBitrate: '192k',
       description: 'H.264 + AAC，CRF 22 — Apple 裝置最佳相容性',
       descriptionEn: 'H.264 + AAC, CRF 22 — Best compatibility with Apple devices',
-      advanced: [
+      advanced: videoAdvanced([
         { key: 'crf', label: '視訊品質 (CRF)', labelEn: 'Video Quality (CRF)', default: 22, options: [18,20,22,25,28], hint: '', hintEn: '' },
         { key: 'audioBitrate', label: '音訊位元率', labelEn: 'Audio Bitrate', default: '192k', options: ['128k','192k','256k'], hint: '', hintEn: '' },
-      ]
+      ])
     }
   },
   {
@@ -158,11 +196,11 @@ const FORMATS = [
       videoCodec: 'libx265', audioCodec: 'aac', crf: 24, audioBitrate: '192k',
       description: 'H.265 + AAC，CRF 24 — 高壓縮比、適合長片',
       descriptionEn: 'H.265 + AAC, CRF 24 — High compression, ideal for long videos',
-      advanced: [
+      advanced: videoAdvanced([
         { key: 'crf', label: '視訊品質 (CRF)', labelEn: 'Video Quality (CRF)', default: 24, options: [18,20,22,24,26,28], hint: '', hintEn: '' },
         { key: 'videoCodec', label: '視訊編碼', labelEn: 'Video Codec', default: 'libx265', options: ['libx264','libx265'], hint: '', hintEn: '' },
         { key: 'audioBitrate', label: '音訊位元率', labelEn: 'Audio Bitrate', default: '192k', options: ['128k','192k','256k'], hint: '', hintEn: '' },
-      ]
+      ])
     }
   },
   {
@@ -174,10 +212,10 @@ const FORMATS = [
       videoCodec: 'libvpx-vp9', audioCodec: 'libopus', crf: 31, audioBitrate: '128k',
       description: 'VP9 + Opus，CRF 31 — 網頁使用最佳格式',
       descriptionEn: 'VP9 + Opus, CRF 31 — Best format for web use',
-      advanced: [
+      advanced: videoAdvanced([
         { key: 'crf', label: '視訊品質 (CRF)', labelEn: 'Video Quality (CRF)', default: 31, options: [24,27,31,34,37], hint: 'VP9 CRF 範圍 0-63，越低越好', hintEn: 'VP9 CRF range 0-63, lower = better' },
         { key: 'audioBitrate', label: '音訊位元率', labelEn: 'Audio Bitrate', default: '128k', options: ['64k','128k','192k'], hint: '', hintEn: '' },
-      ]
+      ])
     }
   },
   {
@@ -189,10 +227,10 @@ const FORMATS = [
       videoCodec: 'libx264', audioCodec: 'mp3', crf: 23, audioBitrate: '192k',
       description: 'H.264 + MP3，舊裝置相容格式',
       descriptionEn: 'H.264 + MP3, compatible with legacy devices',
-      advanced: [
+      advanced: videoAdvanced([
         { key: 'crf', label: '視訊品質 (CRF)', labelEn: 'Video Quality (CRF)', default: 23, options: [18,20,23,26,28], hint: '', hintEn: '' },
         { key: 'audioBitrate', label: '音訊位元率', labelEn: 'Audio Bitrate', default: '192k', options: ['128k','192k','256k'], hint: '', hintEn: '' },
-      ]
+      ])
     }
   },
   {
