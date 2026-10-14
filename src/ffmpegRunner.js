@@ -9,6 +9,10 @@ const AUDIO_EXTS = new Set(['mp3','wav','aac','flac','ogg','m4a','opus','wma']);
 
 function buildVideoFilters(options) {
   const filters = [];
+  if (options.compression) {
+    // 限制長邊 1920、短邊 1080，維持比例且不放大小影片。
+    return ["scale=w='if(gte(iw,ih),min(1920,iw),min(1080,iw))':h='if(gte(iw,ih),min(1080,ih),min(1920,ih))':force_original_aspect_ratio=decrease:force_divisible_by=2", 'fps=30'];
+  }
 
   if (options.resolution && options.resolution !== 'source') {
     filters.push(`scale=-2:${Number(options.resolution)}:flags=lanczos`);
@@ -29,7 +33,11 @@ function buildVideoFilters(options) {
 }
 
 function buildFFmpegArgs({ inputPath, outputPath, outputExt, options = {} }) {
-  const args = ['-y', '-i', inputPath, '-progress', 'pipe:1', '-nostats'];
+  if (options.compression) {
+    if (outputExt !== 'mp4') throw new Error('Compression requires MP4 output');
+    options = { compression: true, videoCodec: 'libx264', audioCodec: 'aac', crf: 25, audioBitrate: '96k' };
+  }
+  const args = ['-n', '-nostdin', '-i', inputPath, '-progress', 'pipe:1', '-nostats'];
   const isAudio = AUDIO_EXTS.has(outputExt);
 
   if (isAudio) {
@@ -58,6 +66,9 @@ function buildFFmpegArgs({ inputPath, outputPath, outputExt, options = {} }) {
       const scale = options.scale || 480;
       args.push('-vf', `fps=${fps},scale=${scale}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse`);
     } else {
+      if (options.compression) {
+        args.push('-map', '0:v:0', '-map', '0:a:0?', '-preset', 'medium', '-pix_fmt', 'yuv420p', '-movflags', '+faststart');
+      }
       const filters = buildVideoFilters(options);
       if (filters.length) args.push('-vf', filters.join(','));
       if (options.videoCodec) args.push('-vcodec', options.videoCodec);

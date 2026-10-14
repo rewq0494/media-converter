@@ -10,6 +10,7 @@ const state = {
   selectedFormat: null,
   advancedOptions: {},
   outputDir: null,
+  outputPath: null,
 };
 
 /* ── Helpers ──────────────────────────────────────────────────────────────── */
@@ -162,6 +163,8 @@ function resetToStep1() {
 /* ── Settings Step ────────────────────────────────────────────────────────── */
 function renderSettingsStep() {
   const isAudio = state.fileInfo?.video === null && state.fileInfo?.audio !== null;
+  $('compressBtn').hidden = !state.fileInfo?.video;
+  renderAdvancedPanel();
   const defaultTab = isAudio ? 'audio' : 'all';
   renderFormatTabs(defaultTab);
   renderFormatGrid(defaultTab);
@@ -218,6 +221,10 @@ async function renderFormatGrid(tab) {
 async function renderAdvancedPanel() {
   const panel = $('advancedPanel');
   if (!state.selectedFormat) { panel.innerHTML = ''; return; }
+  if (state.advancedOptions.compression) {
+    panel.innerHTML = `<span class="preset-badge">${t('compressionBadge')}</span><p class="preset-desc">${t('compressionDesc')}</p>`;
+    return;
+  }
   const preset = await window.api.getPreset(state.selectedFormat);
   if (!preset) { panel.innerHTML = ''; return; }
 
@@ -266,6 +273,13 @@ function renderOutputDir() {
 
 /* ── Step 2 / 3 Listeners ─────────────────────────────────────────────────── */
 function setupStepListeners() {
+  $('compressBtn').addEventListener('click', () => {
+    state.selectedFormat = 'mp4';
+    state.advancedOptions = { compression: true };
+    renderFormatTabs('video');
+    renderFormatGrid('video');
+    renderAdvancedPanel();
+  });
   $('backBtn').addEventListener('click', () => goToStep(1));
 
   $('changeDirBtn').addEventListener('click', async () => {
@@ -283,7 +297,7 @@ function setupStep3Listeners() {
   });
 
   $('openFolderBtn').addEventListener('click', () => {
-    if (state.outputDir) window.api.openFolder(state.outputDir);
+    if (state.outputPath) window.api.openFolder(state.outputPath);
   });
 
   $('anotherBtn').addEventListener('click', resetToStep1);
@@ -335,6 +349,10 @@ async function startConversion() {
     if (result.success) {
       const el = $('outFilePath');
       if (el) el.textContent = result.outputPath || '';
+      state.outputPath = result.outputPath;
+      const delta = result.inputSize > 0 ? (1 - result.outputSize / result.inputSize) * 100 : 0;
+      $('sizeResult').textContent = result.outputSize != null
+        ? `${fmtSize(result.inputSize)} → ${fmtSize(result.outputSize)} (${t(delta >= 0 ? 'sizeReduced' : 'sizeIncreased')} ${Math.abs(delta).toFixed(1)}%)` : '';
       showStep3('done');
     } else {
       const el = $('errorMsg');

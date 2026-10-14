@@ -3,6 +3,8 @@ const path = require('path');
 const { detectFile } = require('./src/fileDetector');
 const { getPreset, getOutputFormats } = require('./src/formatPresets');
 const { runFFmpeg } = require('./src/ffmpegRunner');
+const { getOutputPath } = require('./src/outputPath');
+const fs = require('fs');
 
 let mainWindow;
 let currentProcess = null;
@@ -101,15 +103,14 @@ ipcMain.handle('select-output-dir', async (_e, defaultPath) => {
 
 ipcMain.handle('start-conversion', async (_e, { inputPath, outputDir, outputExt, options, duration }) => {
   const path = require('path');
-  const baseName = path.basename(inputPath, path.extname(inputPath));
-  const outputPath = path.join(outputDir, `${baseName}.${outputExt}`);
+  const outputPath = getOutputPath(inputPath, outputDir, outputExt, options?.compression);
 
   try {
     await runFFmpeg({
       inputPath,
       outputPath,
       outputExt,
-      options,
+      options: { ...getPreset(outputExt), ...options },
       duration,
       onProgress: (pct) => {
         if (mainWindow) mainWindow.webContents.send('conversion-progress', { pct });
@@ -119,7 +120,7 @@ ipcMain.handle('start-conversion', async (_e, { inputPath, outputDir, outputExt,
       }
     });
     currentProcess = null;
-    return { success: true, outputPath };
+    return { success: true, outputPath, inputSize: fs.statSync(inputPath).size, outputSize: fs.statSync(outputPath).size };
   } catch (err) {
     currentProcess = null;
     return { success: false, error: err.message };

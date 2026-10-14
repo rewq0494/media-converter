@@ -289,3 +289,7 @@ GNU General Public License v3.0 — see [LICENSE](LICENSE)
 <div align="center">
   Made with ❤️ by <a href="https://github.com/rewq0494">WayneWen</a>
 </div>
+
+## 影片壓縮
+
+選擇影片 → 下一步 → **影片壓縮（1080p）** → 開始轉換。使用 H.264 / AAC、CRF 25、medium、yuv420p、96 kbps 音訊與 faststart，限制為最高 1080p、30 fps；直式影片維持直式，不放大小影片。輸出為 `_compressed.mp4`，同名檔自動加流水號，保留原檔。完成後顯示前後大小與增減比例。壓縮屬有損處理，不保證每支影片都會變小。

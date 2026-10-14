@@ -48,6 +48,7 @@
 
     <!-- Step 2: Settings -->
     <div class="step-panel" id="step2Panel">
+      <button class="btn-secondary" id="compressBtn" data-i18n="compressVideo" hidden>影片壓縮（1080p）</button>
       <p class="section-title" data-i18n="formatTitle">輸出格式</p>
       <div class="format-tabs" id="formatTabs"></div>
       <div class="format-grid" id="formatGrid"></div>
@@ -84,6 +85,7 @@
         <div class="result-icon success-icon">✓</div>
         <h2 class="result-title success-text" data-i18n="doneTitle">轉換完成！</h2>
         <p class="out-file-path" id="outFilePath"></p>
+        <p class="preset-desc" id="sizeResult"></p>
         <div class="done-actions">
           <button class="btn-secondary" id="openFolderBtn" data-i18n="btnOpenFolder">📁 開啟資料夾</button>
           <button class="btn-secondary" id="anotherBtn" data-i18n="btnConvertAnother">再轉一個</button>

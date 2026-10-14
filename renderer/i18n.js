@@ -20,6 +20,10 @@ const TRANSLATIONS = {
     unknownType: '未知',
     audioOnly: '僅音訊', videoOnly: '僅視訊',
     settingsTitle: '轉換設定',
+    compressVideo: '影片壓縮（1080p）',
+    compressionDesc: 'MP4・最高 1080p・30 fps，保留音訊並另存副本。畫質與流暢度可能降低，實際大小依影片內容而定。',
+    compressionBadge: '影片壓縮',
+    sizeReduced: '縮小', sizeIncreased: '增加',
     langToggle: 'EN',
   },
   en: {
@@ -43,6 +47,10 @@ const TRANSLATIONS = {
     unknownType: 'Unknown',
     audioOnly: 'Audio only', videoOnly: 'Video only',
     settingsTitle: 'Conversion Settings',
+    compressVideo: 'Compress Video (1080p)',
+    compressionDesc: 'MP4, up to 1080p, 30 fps. Keeps audio and saves a copy. Quality and smoothness may decrease; file size depends on the content.',
+    compressionBadge: 'Video Compression',
+    sizeReduced: 'smaller', sizeIncreased: 'larger',
     langToggle: '中文',
   },
 };

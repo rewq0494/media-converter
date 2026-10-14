@@ -65,14 +65,14 @@ describe('ffmpegRunner - buildFFmpegArgs', () => {
     expect(args).toContain('pcm_s16le');
   });
 
-  test('一定包含 -y（覆蓋）和 -progress pipe:1', () => {
+  test('一定包含 -n（禁止覆蓋）和 -progress pipe:1', () => {
     const args = buildFFmpegArgs({
       inputPath: '/in/a.mp3',
       outputPath: '/out/a.wav',
       outputExt: 'wav',
       options: {}
     });
-    expect(args).toContain('-y');
+    expect(args).toContain('-n');
     expect(args).toContain('-progress');
     expect(args).toContain('pipe:1');
   });
@@ -120,7 +120,7 @@ describe('buildFFmpegArgs boundary cases', () => {
 
   test('handles empty options object', () => {
     const args = buildFFmpegArgs({ inputPath: '/in/a.mp4', outputPath: '/out/a.mp3', outputExt: 'mp3', options: {} });
-    expect(args).toContain('-y');
+    expect(args).toContain('-n');
     expect(args).toContain('/in/a.mp4');
   });
 
@@ -158,3 +158,11 @@ describe('parseProgress boundary cases', () => {
     if (result !== null) expect(result).toBeLessThanOrEqual(99);
   });
 });
+
+ test('compression uses fixed compatible settings and optional audio', () => {
+   const args = buildFFmpegArgs({ inputPath: '/in/a.mp4', outputPath: '/out/a.mp4', outputExt: 'mp4', options: { compression: true, videoCodec: 'libx265', crf: 18 } });
+   for (const value of ['-n', '-nostdin', 'libx264', 'aac', '25', '96k', 'medium', 'yuv420p', '+faststart', '0:a:0?']) expect(args).toContain(value);
+   expect(args).not.toContain('libx265');
+   expect(args[args.indexOf('-vf') + 1]).toContain('fps=30');
+   expect(() => buildFFmpegArgs({ outputExt: 'webm', options: { compression: true } })).toThrow();
+ });
