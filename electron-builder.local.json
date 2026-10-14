@@ -30,6 +30,7 @@
           "arm64"
         ]
       }
-    ]
+    ],
+    "hardenedRuntime": false
   }
 }

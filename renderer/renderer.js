@@ -1,391 +1,300 @@
-/* ── IIFE wrapper to avoid global scope collision with i18n.js ──────────── */
 (function () {
 'use strict';
-
-/* ── State ────────────────────────────────────────────────────────────────── */
 const state = {
-  step: 1,
-  filePath: null,
-  fileInfo: null,
-  selectedFormat: null,
-  advancedOptions: {},
-  outputDir: null,
-  outputPath: null,
+  step: 1, mode: 'convert', profile: 'balanced', tab: 'all',
+  filePath: null, fileInfo: null, selectedFormat: null, advancedOptions: {},
+  outputDir: null, outputPath: null, busy: false, detecting: false, cancelRequested: false,
 };
-
-/* ── Helpers ──────────────────────────────────────────────────────────────── */
 const $ = id => document.getElementById(id);
 const t = key => window.i18n.t(key);
+let formatRequest = 0;
+let presetRequest = 0;
+let startedAt = 0;
+let timer;
 
-/* ── Init ─────────────────────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', async () => {
-  window.i18n.applyTranslations();
-  updateLangToggle();
-
-  const dir = await window.api.getDownloadsPath();
-  state.outputDir = dir;
-
+  state.outputDir = await window.api.getDownloadsPath();
   setupDragDrop();
-  setupLangToggle();
-  setupStepListeners();
-  setupStep3Listeners();
-  setupConvertDoneListener();
-
+  document.querySelectorAll('[data-mode]').forEach(btn => btn.addEventListener('click', () => selectMode(btn.dataset.mode)));
+  document.querySelectorAll('[data-profile]').forEach(btn => btn.addEventListener('click', () => {
+    state.profile = btn.dataset.profile;
+    renderCompression();
+  }));
+  $('langToggle').addEventListener('click', () => {
+    window.i18n.setLang(window.i18n.getLang() === 'zh-TW' ? 'en' : 'zh-TW');
+    renderLabels();
+    if (state.fileInfo) renderFileInfo();
+    if (state.step === 2) renderSettingsStep();
+  });
+  $('backBtn').addEventListener('click', () => goToStep(1));
+  $('replaceFile').addEventListener('click', resetToStep1);
+  $('changeDirBtn').addEventListener('click', async () => {
+    const dir = await window.api.selectOutputDir(state.outputDir);
+    if (dir) { state.outputDir = dir; renderOutputDir(); }
+  });
+  $('convertBtn').addEventListener('click', startConversion);
+  $('cancelBtn').addEventListener('click', async () => {
+    if (!state.busy || state.cancelRequested) return;
+    state.cancelRequested = true;
+    $('cancelBtn').disabled = true;
+    $('cancelBtn').textContent = t('cancelPending');
+    await window.api.cancelConversion();
+  });
+  $('openFolderBtn').addEventListener('click', () => { if (state.outputPath) window.api.openFolder(state.outputPath); });
+  $('anotherBtn').addEventListener('click', resetToStep1);
+  $('quitBtn').addEventListener('click', () => window.api.quitApp());
+  $('quitErrBtn').addEventListener('click', () => window.api.quitApp());
+  $('retryBtn').addEventListener('click', () => { renderSettingsStep(); goToStep(2); });
+  window.api.onProgress(data => {
+    if (!state.busy) return;
+    $('progressBar').style.width = `${data.pct}%`;
+    $('progressPct').textContent = `${data.pct}%`;
+  });
+  renderLabels();
   goToStep(1);
 });
 
-/* ── Language ─────────────────────────────────────────────────────────────── */
-function updateLangToggle() {
-  const btn = $('langToggle');
-  if (btn) btn.textContent = t('langToggle');
-}
-
-function setupLangToggle() {
-  const btn = $('langToggle');
-  if (!btn) return;
-  btn.addEventListener('click', () => {
-    const next = window.i18n.getLang() === 'zh-TW' ? 'en' : 'zh-TW';
-    window.i18n.setLang(next);
-    updateLangToggle();
-    if (state.step === 2) renderSettingsStep();
+function renderLabels() {
+  window.i18n.applyTranslations();
+  $('langToggle').textContent = t('langToggle');
+  const compress = state.mode === 'compress';
+  document.body.dataset.mode = state.mode;
+  document.querySelectorAll('[data-mode]').forEach(btn => {
+    const selected = btn.dataset.mode === state.mode;
+    btn.classList.toggle('selected', selected);
+    btn.setAttribute('aria-pressed', String(selected));
+    btn.disabled = state.busy || state.detecting;
   });
+  document.querySelector('[data-i18n="step2"]').textContent = t(compress ? 'compressionStep' : 'step2');
+  $('heroTitle').textContent = t(compress ? 'compressHero' : 'convertHero');
+  $('heroHint').textContent = t(compress ? 'compressHeroHint' : 'convertHeroHint');
+  document.querySelector('.drop-primary').textContent = t(compress ? 'compressDrop' : 'dropPrimary');
+  document.querySelector('.drop-hint').textContent = t(compress ? 'compressDropHint' : 'dropHint');
+  $('fileInput').accept = compress ? 'video/*,.mkv,.webm,.avi' : 'video/*,audio/*,.mkv,.flac,.ogg,.opus,.wma,.m4a,.webm';
+  $('progressTitle').textContent = t(compress ? 'compressProgress' : 'convertProgress');
+  $('doneTitle').textContent = t(compress ? 'compressDone' : 'convertDone');
+  $('langToggle').disabled = state.busy;
 }
 
-/* ── Steps ────────────────────────────────────────────────────────────────── */
+function selectMode(mode) {
+  if (state.busy || state.detecting || state.mode === mode) return;
+  state.mode = mode;
+  state.selectedFormat = null;
+  state.advancedOptions = {};
+  state.outputPath = null;
+  const incompatible = mode === 'compress' && state.fileInfo && !state.fileInfo.video;
+  if (state.step === 3 || incompatible) resetToStep1();
+  renderLabels();
+  if (incompatible) showFileError(t('videoRequired'));
+  if (state.step === 2) renderSettingsStep();
+}
+
 function goToStep(n) {
   state.step = n;
   [1, 2, 3].forEach(i => {
-    $(`step${i}Panel`)?.classList.toggle('active', i === n);
-    const dot = $(`stepDot${i}`);
-    if (dot) {
-      dot.classList.toggle('active', i === n);
-      dot.classList.toggle('done', i < n);
-    }
+    $(`step${i}Panel`).classList.toggle('active', i === n);
+    $(`stepDot${i}`).classList.toggle('active', i === n);
+    $(`stepDot${i}`).classList.toggle('done', i < n);
   });
+  $(`step${n}Panel`).scrollTop = 0;
 }
 
-/* ── Drag & Drop ──────────────────────────────────────────────────────────── */
 function setupDragDrop() {
-  const zone   = $('dropZone');
-  const input  = $('fileInput');
-  const dropBtn = $('dropBtn');
-
-  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  const zone = $('dropZone');
+  const input = $('fileInput');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
   zone.addEventListener('drop', async e => {
-    e.preventDefault();
-    zone.classList.remove('drag-over');
+    e.preventDefault(); zone.classList.remove('drag-over');
     const file = e.dataTransfer.files[0];
-    if (!file) return;
-    const filePath = getFilePath(file);
-    await handleFileDetect(filePath);
+    if (file) await handleFileDetect(window.api.getPathForFile(file));
   });
-
-  zone.addEventListener('click', e => {
-    if (e.target !== dropBtn) input.click();
+  zone.addEventListener('click', () => { if (!state.detecting) input.click(); });
+  zone.addEventListener('keydown', e => {
+    if (e.target === zone && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); input.click(); }
   });
-  dropBtn.addEventListener('click', e => { e.stopPropagation(); input.click(); });
-
   input.addEventListener('change', async e => {
     const file = e.target.files[0];
-    if (!file) return;
-    await handleFileDetect(getFilePath(file));
+    if (file) await handleFileDetect(window.api.getPathForFile(file));
     input.value = '';
   });
 }
 
-function getFilePath(file) {
-  if (window.api?.getPathForFile) return window.api.getPathForFile(file);
-  return file.path || '';
-}
-
-/* ── File Detection ───────────────────────────────────────────────────────── */
+function showFileError(message) { $('fileError').textContent = message; $('fileError').hidden = false; }
 async function handleFileDetect(filePath) {
-  if (!filePath) { alert(t('detectFailed')); return; }
-
+  if (state.detecting || state.busy) return;
+  if (!filePath) { showFileError(t('detectFailed')); return; }
+  state.detecting = true;
+  $('fileError').hidden = true;
   $('dropZone').style.display = 'none';
   $('fileInfo').style.display = '';
-  $('fileInfo').innerHTML = `<p style="color:var(--text-3);font-size:13px">…</p>`;
-
-  const result = await window.api.detectFile(filePath);
-  if (!result.success) {
+  $('fileInfo').textContent = t('detecting');
+  renderLabels();
+  try {
+    const result = await window.api.detectFile(filePath);
+    if (!result.success) throw new Error(result.error);
+    if (state.mode === 'compress' && !result.data.video) throw new Error(t('videoRequired'));
+    state.filePath = filePath;
+    state.fileInfo = result.data;
+    state.selectedFormat = null;
+    state.advancedOptions = {};
+    renderFileInfo();
+  } catch (err) {
     $('dropZone').style.display = '';
     $('fileInfo').style.display = 'none';
-    alert(`${t('detectFailed')}：${result.error}`);
-    return;
+    showFileError(err.message);
+  } finally {
+    state.detecting = false;
+    renderLabels();
   }
-
-  state.filePath  = filePath;
-  state.fileInfo  = result.data;
-  renderFileInfo(result.data);
 }
 
-function renderFileInfo(info) {
-  const duration = info.duration ? fmtDuration(info.duration) : '--';
-  const lang = window.i18n.getLang();
-  const none = lang === 'zh-TW' ? '無' : 'None';
-
-  const videoDesc = info.video
-    ? `${(info.video.codec || '').toUpperCase()} ${info.video.width ? `${info.video.width}×${info.video.height}` : ''}`.trim()
-    : none;
-  const audioDesc = info.audio
-    ? `${(info.audio.codec || '').toUpperCase()} ${info.audio.sampleRate ? `${(info.audio.sampleRate/1000).toFixed(1)}kHz` : ''}`.trim()
-    : none;
-
-  $('fileInfo').innerHTML = `
-    <div class="file-name">${esc(info.filename || filePart(state.filePath))}</div>
-    <div class="meta-chips">
-      <span class="meta-chip">${t('metaDuration')}: ${duration}</span>
-      <span class="meta-chip">${t('metaVideo')}: ${videoDesc}</span>
-      <span class="meta-chip">${t('metaAudio')}: ${audioDesc}</span>
-      <span class="meta-chip">${t('metaFileSize')}: ${fmtSize(info.size)}</span>
-    </div>
-    <div class="file-actions">
-      <button class="btn-secondary btn-sm" id="changeFileBtn">${t('fileInfoChange')}</button>
-      <button class="btn-primary" id="nextBtn">${t('fileInfoNext')}</button>
-    </div>`;
-
+function renderFileInfo() {
+  const info = state.fileInfo;
+  $('fileInfo').innerHTML = `<div class="file-ready"><span class="ready-icon" aria-hidden="true">✓</span><div><div class="file-name">${esc(filePart(state.filePath))}</div><div class="meta-chips"><span class="meta-chip">${fmtSize(info.size)}</span><span class="meta-chip">${fmtDuration(info.duration)}</span>${info.video ? `<span class="meta-chip">${info.video.width} × ${info.video.height}</span>` : ''}</div></div></div><div class="file-actions"><button class="btn-secondary btn-sm" id="changeFileBtn">${t('fileInfoChange')}</button><button class="btn-primary" id="nextBtn">${t('fileInfoNext')}</button></div>`;
   $('changeFileBtn').addEventListener('click', resetToStep1);
   $('nextBtn').addEventListener('click', () => { renderSettingsStep(); goToStep(2); });
 }
 
 function resetToStep1() {
-  state.filePath = null;
-  state.fileInfo = null;
-  state.selectedFormat = null;
-  state.advancedOptions = {};
+  state.filePath = null; state.fileInfo = null; state.selectedFormat = null;
+  state.advancedOptions = {}; state.outputPath = null;
   $('dropZone').style.display = '';
-  $('fileInfo').style.display  = 'none';
-  $('fileInfo').innerHTML = '';
+  $('fileInfo').style.display = 'none'; $('fileInfo').innerHTML = '';
+  $('fileError').hidden = true;
   goToStep(1);
+  renderLabels();
 }
 
-/* ── Settings Step ────────────────────────────────────────────────────────── */
 function renderSettingsStep() {
-  const isAudio = state.fileInfo?.video === null && state.fileInfo?.audio !== null;
-  $('compressBtn').hidden = !state.fileInfo?.video;
-  renderAdvancedPanel();
-  const defaultTab = isAudio ? 'audio' : 'all';
-  renderFormatTabs(defaultTab);
-  renderFormatGrid(defaultTab);
+  renderLabels();
+  const compress = state.mode === 'compress';
+  $('conversionSettings').hidden = compress;
+  $('compressionSettings').hidden = !compress;
+  $('settingsEyebrow').textContent = t(compress ? 'modeCompress' : 'modeConvert');
+  $('settingsTitle').textContent = t(compress ? 'settingsCompress' : 'settingsConvert');
+  $('taskBadge').textContent = compress ? 'MP4' : '⇄';
+  $('sourceName').textContent = filePart(state.filePath);
+  $('sourceMeta').textContent = `${fmtSize(state.fileInfo.size)} · ${fmtDuration(state.fileInfo.duration)}`;
+  $('convertBtn').textContent = t(compress ? 'compressAction' : 'convertAction');
+  if (compress) {
+    state.selectedFormat = 'mp4';
+    renderCompression();
+  } else {
+    if (!state.fileInfo.video) state.tab = 'audio';
+    renderFormatTabs();
+    renderFormatGrid();
+    renderAdvancedPanel();
+  }
+  $('convertBtn').disabled = !state.selectedFormat;
   renderOutputDir();
-  window.i18n.applyTranslations();
 }
 
-function renderFormatTabs(activeTab) {
-  const tabs = [
-    { id: 'all',   key: 'tabAll' },
-    { id: 'video', key: 'tabVideo' },
-    { id: 'audio', key: 'tabAudio' },
-  ];
-  $('formatTabs').innerHTML = tabs.map(tab =>
-    `<button class="tab-btn${tab.id === activeTab ? ' active' : ''}" data-tab="${tab.id}">${t(tab.key)}</button>`
-  ).join('');
-  $('formatTabs').querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      $('formatTabs').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      renderFormatGrid(btn.dataset.tab);
-    });
+function renderCompression() {
+  document.querySelectorAll('[data-profile]').forEach(btn => {
+    const selected = btn.dataset.profile === state.profile;
+    btn.classList.toggle('selected', selected);
+    btn.setAttribute('aria-pressed', String(selected));
   });
+  $('compressionSummary').textContent = `MP4 · ${t('maxResolution')} ${state.profile === 'small' ? '720p' : '1080p'} · 30 fps`;
 }
 
-async function renderFormatGrid(tab) {
-  const lang = window.i18n.getLang();
-  let formats = await window.api.getOutputFormats() || [];
-  if (tab === 'audio') formats = formats.filter(f => f.type === 'audio');
-  if (tab === 'video') formats = formats.filter(f => f.type === 'video');
+function renderFormatTabs() {
+  const tabs = state.fileInfo.video ? [['all', 'tabAll'], ['video', 'tabVideo'], ['audio', 'tabAudio']] : [['audio', 'tabAudio']];
+  $('formatTabs').innerHTML = tabs.map(([id, key]) => `<button class="tab-btn${state.tab === id ? ' active' : ''}" data-tab="${id}" aria-pressed="${state.tab === id}">${t(key)}</button>`).join('');
+  $('formatTabs').querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => {
+    state.tab = btn.dataset.tab;
+    renderFormatTabs(); renderFormatGrid();
+  }));
+}
 
-  $('formatGrid').innerHTML = formats.map(f => {
-    const short = (lang === 'en' && f.shortDescEn) ? f.shortDescEn : (f.shortDesc || '');
-    const full  = (lang === 'en' && f.descriptionEn) ? f.descriptionEn : f.description;
-    return `<div class="format-card${state.selectedFormat === f.ext ? ' selected' : ''}" data-ext="${f.ext}">
-      <span class="format-ext">.${f.ext}</span>
-      <span class="format-label">${f.label}</span>
-      <span class="format-tag">${esc(short)}</span>
-      <div class="format-tooltip">${esc(full)}</div>
-    </div>`;
-  }).join('');
-
-  $('formatGrid').querySelectorAll('.format-card').forEach(card => {
-    card.addEventListener('click', () => {
-      $('formatGrid').querySelectorAll('.format-card').forEach(c => c.classList.remove('selected'));
-      card.classList.add('selected');
-      state.selectedFormat = card.dataset.ext;
-      state.advancedOptions = {};
-      renderAdvancedPanel();
-    });
-  });
+async function renderFormatGrid() {
+  const request = ++formatRequest;
+  let formats = await window.api.getOutputFormats(state.fileInfo?.video ? 'video' : 'audio') || [];
+  if (request !== formatRequest || state.mode !== 'convert') return;
+  if (state.tab !== 'all') formats = formats.filter(f => f.type === state.tab);
+  const en = window.i18n.getLang() === 'en';
+  $('formatGrid').innerHTML = formats.map(f => `<button class="format-card${state.selectedFormat === f.ext ? ' selected' : ''}" data-ext="${f.ext}" aria-pressed="${state.selectedFormat === f.ext}" title="${esc(en ? f.descriptionEn : f.description)}"><span class="format-ext">.${f.ext}</span><span class="format-label">${f.label}</span><span class="format-tag">${esc(en ? f.shortDescEn : f.shortDesc)}</span></button>`).join('');
+  $('formatGrid').querySelectorAll('button').forEach(card => card.addEventListener('click', () => {
+    state.selectedFormat = card.dataset.ext; state.advancedOptions = {};
+    $('convertBtn').disabled = false;
+    renderFormatGrid(); renderAdvancedPanel();
+  }));
 }
 
 async function renderAdvancedPanel() {
+  const request = ++presetRequest;
   const panel = $('advancedPanel');
   if (!state.selectedFormat) { panel.innerHTML = ''; return; }
-  if (state.advancedOptions.compression) {
-    panel.innerHTML = `<span class="preset-badge">${t('compressionBadge')}</span><p class="preset-desc">${t('compressionDesc')}</p>`;
-    return;
-  }
   const preset = await window.api.getPreset(state.selectedFormat);
-  if (!preset) { panel.innerHTML = ''; return; }
-
-  const lang = window.i18n.getLang();
-  const presetDesc = (lang === 'en' && preset.descriptionEn) ? preset.descriptionEn : preset.description;
-
-  let html = `
-    <span class="preset-badge">${t('presetBadge')}</span>
-    <p class="preset-desc">${esc(presetDesc || '')}</p>`;
-
+  if (request !== presetRequest || state.mode !== 'convert' || !preset) return;
+  const en = window.i18n.getLang() === 'en';
+  let html = `<p class="preset-desc">${esc(en ? preset.descriptionEn : preset.description)}</p>`;
   if (preset.advanced?.length) {
     html += `<details class="advanced-details"><summary>${t('advancedToggle')}</summary><div class="advanced-opts">`;
     preset.advanced.forEach(opt => {
       if (!(opt.key in state.advancedOptions)) state.advancedOptions[opt.key] = opt.default;
-      const label = (lang === 'en' && opt.labelEn) ? opt.labelEn : opt.label;
-      const hint  = (lang === 'en' && opt.hintEn)  ? opt.hintEn  : opt.hint;
-      const val   = state.advancedOptions[opt.key] ?? opt.default;
-      const options = (opt.options || []).map(option => {
-        if (typeof option !== 'object') return { value: option, label: option };
-        return {
-          value: option.value,
-          label: (lang === 'en' && option.labelEn) ? option.labelEn : option.label,
-        };
-      });
-      html += `<div class="opt-row">
-        <label class="opt-label">${esc(label)}</label>
-        <select class="opt-select" data-key="${opt.key}">
-          ${options.map(o => `<option value="${esc(o.value)}"${o.value == val ? ' selected' : ''}>${esc(o.label)}</option>`).join('')}
-        </select>
-        ${hint ? `<span class="opt-hint">${esc(hint)}</span>` : ''}
-      </div>`;
+      const label = en ? opt.labelEn : opt.label;
+      const hint = en ? opt.hintEn : opt.hint;
+      html += `<div class="opt-row"><label class="opt-label" for="opt-${opt.key}">${esc(label)}</label><select class="opt-select" id="opt-${opt.key}" data-key="${opt.key}">`;
+      html += (opt.options || []).map(o => {
+        const value = typeof o === 'object' ? o.value : o;
+        const text = typeof o === 'object' ? (en ? o.labelEn : o.label) : o;
+        return `<option value="${esc(value)}"${value == state.advancedOptions[opt.key] ? ' selected' : ''}>${esc(text)}</option>`;
+      }).join('');
+      html += `</select>${hint ? `<span class="opt-hint">${esc(hint)}</span>` : ''}</div>`;
     });
-    html += `</div></details>`;
+    html += '</div></details>';
   }
-
   panel.innerHTML = html;
-  panel.querySelectorAll('.opt-select').forEach(sel => {
-    sel.addEventListener('change', () => { state.advancedOptions[sel.dataset.key] = sel.value; });
-  });
+  panel.querySelectorAll('select').forEach(sel => sel.addEventListener('change', () => { state.advancedOptions[sel.dataset.key] = sel.value; }));
 }
 
-function renderOutputDir() {
-  const el = $('outputDirDisplay');
-  if (el && state.outputDir) el.textContent = state.outputDir;
-}
-
-/* ── Step 2 / 3 Listeners ─────────────────────────────────────────────────── */
-function setupStepListeners() {
-  $('compressBtn').addEventListener('click', () => {
-    state.selectedFormat = 'mp4';
-    state.advancedOptions = { compression: true };
-    renderFormatTabs('video');
-    renderFormatGrid('video');
-    renderAdvancedPanel();
-  });
-  $('backBtn').addEventListener('click', () => goToStep(1));
-
-  $('changeDirBtn').addEventListener('click', async () => {
-    const dir = await window.api.selectOutputDir();
-    if (dir) { state.outputDir = dir; renderOutputDir(); }
-  });
-
-  $('convertBtn').addEventListener('click', startConversion);
-}
-
-function setupStep3Listeners() {
-  $('cancelBtn').addEventListener('click', () => {
-    window.api.cancelConversion();
-    resetToStep1();
-  });
-
-  $('openFolderBtn').addEventListener('click', () => {
-    if (state.outputPath) window.api.openFolder(state.outputPath);
-  });
-
-  $('anotherBtn').addEventListener('click', resetToStep1);
-  $('quitBtn').addEventListener('click', () => window.api.quitApp());
-
-  $('retryBtn').addEventListener('click', () => { renderSettingsStep(); goToStep(2); });
-  $('quitErrBtn').addEventListener('click', () => window.api.quitApp());
-}
-
-/* ── Progress / Done events ───────────────────────────────────────────────── */
-function setupConvertDoneListener() {
-  window.api.onProgress(data => {
-    const bar = $('progressBar');
-    const pct = $('progressPct');
-    const tim = $('progressTime');
-    if (bar) bar.style.width = `${data.pct}%`;
-    if (pct) pct.textContent = `${data.pct}%`;
-    if (tim && data.elapsed) tim.textContent = fmtDuration(data.elapsed);
-  });
-
-  // Conversion done is handled via await in startConversion()
-}
-
+function renderOutputDir() { $('outputDirDisplay').textContent = state.outputDir || ''; }
 function showStep3(mode) {
-  $('progressSection').style.display = mode === 'progress' ? '' : 'none';
-  $('doneSection').style.display      = mode === 'done'     ? '' : 'none';
-  $('errorSection').style.display     = mode === 'error'    ? '' : 'none';
+  ['progress', 'done', 'error'].forEach(name => { $(`${name}Section`).style.display = name === mode ? '' : 'none'; });
 }
 
-/* ── Conversion ───────────────────────────────────────────────────────────── */
 async function startConversion() {
-  if (!state.selectedFormat) { alert(t('noFormatSelected')); return; }
-  if (!state.filePath || !state.outputDir) return;
-
-  $('progressBar').style.width = '0%';
-  $('progressPct').textContent = '0%';
-  $('progressTime').textContent = '';
-  goToStep(3);
-  showStep3('progress');
-
+  if (state.busy || !state.selectedFormat || !state.filePath || !state.outputDir) return;
+  state.busy = true; state.cancelRequested = false;
+  $('cancelBtn').disabled = false;
+  $('progressBar').style.width = '0%'; $('progressPct').textContent = '0%';
+  $('progressTime').textContent = '0:00';
+  startedAt = Date.now();
+  timer = setInterval(() => { $('progressTime').textContent = fmtDuration((Date.now() - startedAt) / 1000); }, 1000);
+  renderLabels(); goToStep(3); showStep3('progress');
   try {
-    const result = await window.api.startConversion({
-      inputPath: state.filePath,
-      outputDir: state.outputDir,
-      outputExt: state.selectedFormat,
-      options: state.advancedOptions,
-      duration: state.fileInfo?.duration || 0,
-    });
-    if (result.success) {
-      const el = $('outFilePath');
-      if (el) el.textContent = result.outputPath || '';
-      state.outputPath = result.outputPath;
-      const delta = result.inputSize > 0 ? (1 - result.outputSize / result.inputSize) * 100 : 0;
-      $('sizeResult').textContent = result.outputSize != null
-        ? `${fmtSize(result.inputSize)} → ${fmtSize(result.outputSize)} (${t(delta >= 0 ? 'sizeReduced' : 'sizeIncreased')} ${Math.abs(delta).toFixed(1)}%)` : '';
-      showStep3('done');
-    } else {
-      const el = $('errorMsg');
-      if (el) el.textContent = result.error || '';
-      showStep3('error');
-    }
+    const result = await window.api.startConversion({ inputPath: state.filePath, outputDir: state.outputDir, outputExt: state.selectedFormat,
+      options: state.mode === 'compress' ? { compression: true, compressionProfile: state.profile } : state.advancedOptions,
+      duration: state.fileInfo.duration || 0 });
+    if (state.cancelRequested) { renderSettingsStep(); goToStep(2); return; }
+    if (!result.success) throw new Error(result.error);
+    state.outputPath = result.outputPath;
+    $('outFilePath').textContent = result.outputPath;
+    const delta = result.inputSize > 0 ? (1 - result.outputSize / result.inputSize) * 100 : 0;
+    $('sizeResult').innerHTML = `<div><small>${t('resultOriginal')}</small><strong>${fmtSize(result.inputSize)}</strong></div><span aria-hidden="true">→</span><div><small>${t('resultOutput')}</small><strong>${fmtSize(result.outputSize)}</strong></div><span class="size-badge${delta < 0 ? ' larger' : ''}">${t(delta >= 0 ? 'sizeReduced' : 'sizeIncreased')} ${Math.abs(delta).toFixed(1)}%</span>`;
+    $('resultHint').textContent = t(state.mode === 'compress' && delta <= 0 ? 'largerNote' : 'copyNote');
+    showStep3('done');
   } catch (err) {
-    const el = $('errorMsg');
-    if (el) el.textContent = err.message || String(err);
-    showStep3('error');
+    if (state.cancelRequested) { renderSettingsStep(); goToStep(2); }
+    else { $('errorMsg').textContent = err.message; showStep3('error'); }
+  } finally {
+    clearInterval(timer); state.busy = false; renderLabels();
   }
 }
-
-/* ── Util ─────────────────────────────────────────────────────────────────── */
 function fmtDuration(sec) {
-  if (!sec || isNaN(sec)) return '--';
+  if (!Number.isFinite(sec)) return '--';
   const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = Math.floor(sec % 60);
-  return h > 0
-    ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
-    : `${m}:${String(s).padStart(2,'0')}`;
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
 }
 function fmtSize(bytes) {
-  if (!bytes) return '--';
+  if (bytes == null) return '--';
   if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1048576) return `${(bytes/1024).toFixed(1)} KB`;
-  if (bytes < 1073741824) return `${(bytes/1048576).toFixed(1)} MB`;
-  return `${(bytes/1073741824).toFixed(2)} GB`;
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1073741824) return `${(bytes / 1048576).toFixed(1)} MB`;
+  return `${(bytes / 1073741824).toFixed(2)} GB`;
 }
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function filePart(p) {
-  return p ? p.split(/[/\\]/).pop() : '';
-}
-
-})(); // end IIFE
+function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function filePart(p) { return p ? p.split(/[/\\]/).pop() : ''; }
+})();

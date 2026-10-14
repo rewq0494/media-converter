@@ -166,3 +166,15 @@ describe('parseProgress boundary cases', () => {
    expect(args[args.indexOf('-vf') + 1]).toContain('fps=30');
    expect(() => buildFFmpegArgs({ outputExt: 'webm', options: { compression: true } })).toThrow();
  });
+
+ test('smaller compression profile caps video at 720p with stronger compression', () => {
+   const args = buildFFmpegArgs({ inputPath: '/in/a.mp4', outputPath: '/out/a.mp4', outputExt: 'mp4', options: { compression: true, compressionProfile: 'small' } });
+   expect(args[args.indexOf('-crf') + 1]).toBe('28');
+   expect(args[args.indexOf('-vf') + 1]).toContain('min(1280,iw)');
+   expect(args[args.indexOf('-vf') + 1]).toContain('min(720,ih)');
+ });
+ test('unknown compression profile falls back to balanced settings', () => {
+   const args = buildFFmpegArgs({ inputPath: '/in/a.mp4', outputPath: '/out/a.mp4', outputExt: 'mp4', options: { compression: true, compressionProfile: 'unknown' } });
+   expect(args[args.indexOf('-crf') + 1]).toBe('25');
+   expect(args[args.indexOf('-vf') + 1]).toContain('min(1920,iw)');
+ });

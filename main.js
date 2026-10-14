@@ -11,8 +11,8 @@ let currentProcess = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 780,
-    height: 620,
+    width: 900,
+    height: 820,
     minWidth: 640,
     minHeight: 520,
     webPreferences: {
@@ -102,7 +102,7 @@ ipcMain.handle('select-output-dir', async (_e, defaultPath) => {
 });
 
 ipcMain.handle('start-conversion', async (_e, { inputPath, outputDir, outputExt, options, duration }) => {
-  const path = require('path');
+  if (currentProcess) return { success: false, error: '已有工作進行中 / A task is already running' };
   const outputPath = getOutputPath(inputPath, outputDir, outputExt, options?.compression);
 
   try {
@@ -112,6 +112,7 @@ ipcMain.handle('start-conversion', async (_e, { inputPath, outputDir, outputExt,
       outputExt,
       options: { ...getPreset(outputExt), ...options },
       duration,
+      onSpawn: proc => { currentProcess = proc; },
       onProgress: (pct) => {
         if (mainWindow) mainWindow.webContents.send('conversion-progress', { pct });
       },
@@ -130,7 +131,6 @@ ipcMain.handle('start-conversion', async (_e, { inputPath, outputDir, outputExt,
 ipcMain.handle('cancel-conversion', () => {
   if (currentProcess) {
     currentProcess.kill('SIGTERM');
-    currentProcess = null;
   }
   return { success: true };
 });

@@ -7,8 +7,10 @@ const AUDIO_EXTS = new Set(['mp3','wav','aac','flac','ogg','m4a','opus','wma']);
 function buildVideoFilters(options) {
   const filters = [];
   if (options.compression) {
+    const width = options.compressionProfile === 'small' ? 1280 : 1920;
+    const height = options.compressionProfile === 'small' ? 720 : 1080;
     // 限制長邊 1920、短邊 1080，維持比例且不放大小影片。
-    return ["scale=w='if(gte(iw,ih),min(1920,iw),min(1080,iw))':h='if(gte(iw,ih),min(1080,ih),min(1920,ih))':force_original_aspect_ratio=decrease:force_divisible_by=2", 'fps=30'];
+    return [`scale=w='if(gte(iw,ih),min(${width},iw),min(${height},iw))':h='if(gte(iw,ih),min(${height},ih),min(${width},ih))':force_original_aspect_ratio=decrease:force_divisible_by=2`, 'fps=30'];
   }
 
   if (options.resolution && options.resolution !== 'source') {
@@ -32,7 +34,8 @@ function buildVideoFilters(options) {
 function buildFFmpegArgs({ inputPath, outputPath, outputExt, options = {} }) {
   if (options.compression) {
     if (outputExt !== 'mp4') throw new Error('Compression requires MP4 output');
-    options = { compression: true, videoCodec: 'libx264', audioCodec: 'aac', crf: 25, audioBitrate: '96k' };
+    const compressionProfile = options.compressionProfile === 'small' ? 'small' : 'balanced';
+    options = { compression: true, compressionProfile, videoCodec: 'libx264', audioCodec: 'aac', crf: compressionProfile === 'small' ? 28 : 25, audioBitrate: '96k' };
   }
   const args = ['-n', '-nostdin', '-i', inputPath, '-progress', 'pipe:1', '-nostats'];
   const isAudio = AUDIO_EXTS.has(outputExt);
@@ -91,10 +94,11 @@ function parseProgress(line, totalDuration) {
   return Math.min(Math.round(pct), 99);
 }
 
-function runFFmpeg({ inputPath, outputPath, outputExt, options, duration, onProgress, onLog }) {
+function runFFmpeg({ inputPath, outputPath, outputExt, options, duration, onProgress, onLog, onSpawn }) {
   return new Promise((resolve, reject) => {
     const args = buildFFmpegArgs({ inputPath, outputPath, outputExt, options });
     const proc = spawn(getMediaTool('ffmpeg'), args);
+    if (onSpawn) onSpawn(proc);
     let errorOutput = '';
 
     proc.stdout.on('data', chunk => {
