@@ -293,3 +293,7 @@ GNU General Public License v3.0 — see [LICENSE](LICENSE)
 ## 影片壓縮
 
 選擇影片 → 下一步 → **影片壓縮（1080p）** → 開始轉換。使用 H.264 / AAC、CRF 25、medium、yuv420p、96 kbps 音訊與 faststart，限制為最高 1080p、30 fps；直式影片維持直式，不放大小影片。輸出為 `_compressed.mp4`，同名檔自動加流水號，保留原檔。完成後顯示前後大小與增減比例。壓縮屬有損處理，不保證每支影片都會變小。
+
+## 本機精簡版（Apple Silicon）
+
+執行 `npm run build:local`，輸出 `dist/local/mac-arm64/Media Converter.app`。Electron 僅保留英文內建語系，應用介面仍支援繁體中文與英文，不製作 DMG、不內附 FFmpeg/FFprobe，也不需要開發者憑證。共用 `/opt/homebrew/bin` 或 `/usr/local/bin` 已安裝的 Homebrew FFmpeg；Finder 啟動不依賴 shell PATH。請保留本機 FFmpeg 安裝，缺少工具時會顯示錯誤。既有 `build:mac` / `build:win` 仍製作可攜版。建置不自動清理其他舊版產物。

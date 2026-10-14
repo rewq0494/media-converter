@@ -1,9 +1,6 @@
 const { execFile } = require('child_process');
 
-// In packaged Electron, ffprobe-static resolves inside app.asar (a file, not a dir).
-// We must redirect to app.asar.unpacked where the real binary lives.
-function fixAsar(p) { return p.replace('app.asar', 'app.asar.unpacked'); }
-const ffprobePath = fixAsar(require('ffprobe-static').path);
+const { getMediaTool } = require('./mediaTools');
 
 const FORMAT_MAP = {
   'mov,mp4,m4a,3gp,3g2,mj2': 'mp4',
@@ -54,7 +51,7 @@ function detectFile(filePath) {
       filePath
     ];
 
-    execFile(ffprobePath, args, { maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
+    execFile(getMediaTool('ffprobe'), args, { maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
       if (err) return reject(new Error(`ffprobe 錯誤: ${err.message}`));
 
       let data;

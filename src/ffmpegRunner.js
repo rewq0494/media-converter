@@ -1,9 +1,6 @@
 const { spawn } = require('child_process');
 
-// In packaged Electron, ffmpeg-static resolves inside app.asar (a file, not a dir).
-// We must redirect to app.asar.unpacked where the real binary lives.
-function fixAsar(p) { return p.replace('app.asar', 'app.asar.unpacked'); }
-const ffmpegPath = fixAsar(require('ffmpeg-static'));
+const { getMediaTool } = require('./mediaTools');
 
 const AUDIO_EXTS = new Set(['mp3','wav','aac','flac','ogg','m4a','opus','wma']);
 
@@ -97,7 +94,7 @@ function parseProgress(line, totalDuration) {
 function runFFmpeg({ inputPath, outputPath, outputExt, options, duration, onProgress, onLog }) {
   return new Promise((resolve, reject) => {
     const args = buildFFmpegArgs({ inputPath, outputPath, outputExt, options });
-    const proc = spawn(ffmpegPath, args);
+    const proc = spawn(getMediaTool('ffmpeg'), args);
     let errorOutput = '';
 
     proc.stdout.on('data', chunk => {

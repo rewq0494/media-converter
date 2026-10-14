@@ -11,7 +11,8 @@
     "build:win": "electron-builder --win",
     "build": "electron-builder",
     "dist:prune": "node scripts/prune-dist.js",
-    "build:release": "npm run build:mac && npm run build:win && npm run dist:prune"
+    "build:release": "npm run build:mac && npm run build:win && npm run dist:prune",
+    "build:local": "electron-builder --config electron-builder.local.json --mac --dir"
   },
   "keywords": [],
   "author": "",
