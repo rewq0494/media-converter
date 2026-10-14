@@ -5,7 +5,7 @@
 
   [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
   [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey)](https://github.com/rewq0494/media-converter/releases)
-  [![Tests](https://img.shields.io/badge/tests-46%20passing-brightgreen)](#testing)
+  [![Tests](https://img.shields.io/badge/tests-99%20passing-brightgreen)](#testing)
   [![Electron](https://img.shields.io/badge/Electron-36-47848F?logo=electron)](https://electronjs.org)
   [![ffmpeg](https://img.shields.io/badge/ffmpeg-bundled-green)](https://ffmpeg.org)
 
@@ -41,35 +41,13 @@ Media Converter 是一個**桌面應用程式**，完全在本機運行。上傳
 
 - **macOS** 11+（Apple Silicon）或 **Windows** 10+
 - Node.js 18+（僅開發環境需要）
-- 無需另外安裝 ffmpeg — 已內建執行檔
+- 可攜版內附 ffmpeg；本機精簡版共用 Homebrew FFmpeg
 
 ### 🚀 快速開始（下載安裝）
 
-從 [Releases](https://github.com/rewq0494/media-converter/releases) 下載最新版本：
+目前原始碼版本為 **1.2.0**（[更新說明](CHANGELOG.md)）。本版本以本機精簡版驗證，請使用 `npm ci`、`npm run build:local` 建置；需要本機已安裝的 Homebrew FFmpeg。尚未提供 1.2.0 的 DMG／Windows 安裝檔。
 
-| 下載 | 適用 |
-|---|---|
-| [macOS Apple Silicon (.dmg)](https://github.com/rewq0494/media-converter/releases/download/v1.1.0/Media-Converter-macOS-Apple-Silicon.dmg) | **M1 / M2 / M3 / M4** |
-| [Windows 64-bit (.exe)](https://github.com/rewq0494/media-converter/releases/download/v1.1.0/Media-Converter-Windows-Setup.exe) | Windows 10 以上 |
-
-**macOS 安裝步驟：**
-1. 下載 `macOS Apple Silicon (.dmg)` 安裝檔
-2. 雙擊開啟 DMG，將 **Media Converter.app** 拖入「應用程式」資料夾
-3. 第一次開啟時若出現 **「Apple 無法驗證」** 提示，請用以下任一方式解決：
-
-   **方法一（推薦）：** 打開終端機，執行一次：
-   ```bash
-   xattr -cr /Applications/Media\ Converter.app
-   ```
-
-   **方法二：** 前往 **系統設定 → 隱私權與安全性** → 往下滾到「安全性」→ 點選 **「仍要打開」**
-
-> ⚠️ 這是因為本 App 沒有 Apple 付費開發者帳號簽名，是所有開源 macOS 桌面應用的常見現象，並非惡意軟體。
-
-**Windows 安裝步驟：**
-1. 下載 `.exe` 安裝檔
-2. 雙擊執行安裝程式
-3. 若出現 SmartScreen 警告，點選「其他資訊」→「仍要執行」
+**本機版安裝：**建置後將 `dist/local/mac-arm64/Media Converter.app` 移至「應用程式」。本機版使用 ad-hoc 簽署，未經 Apple 公證。
 
 ### 🛠 開發環境設定
 
@@ -84,7 +62,7 @@ npm install
 # 開發模式啟動
 npm start
 
-# 執行測試（TDD — 46 個測試）
+# 執行測試（TDD — 66 個單元測試）
 npm test
 ```
 
@@ -118,7 +96,7 @@ media-converter/
 │   ├── styles.css       # 深色/淺色主題（跟隨系統）
 │   ├── renderer.js      # UI 邏輯
 │   └── i18n.js          # zh-TW / EN 翻譯
-└── tests/               # 46 個單元 + 邊界測試（Jest）
+└── tests/               # 66 個單元 + 邊界測試（Jest）
 ```
 
 ### 🧪 測試
@@ -132,7 +110,7 @@ media-converter/
 
 ```bash
 npm test
-# Tests: 46 passed, 46 total
+# Tests: 66 passed, 66 total
 ```
 
 ### ⚖️ 授權與法律說明
@@ -194,31 +172,9 @@ No subscriptions. No watermarks. No internet required.
 
 ### 🚀 Quick Start (Download)
 
-Download the latest release from [Releases](https://github.com/rewq0494/media-converter/releases):
+Current source version: **1.2.0** ([changelog](CHANGELOG.md)). Build the local Mac edition with `npm ci` and `npm run build:local`; Homebrew FFmpeg is required. Version 1.2.0 DMG/Windows installers are not provided.
 
-| Download | Platform |
-|---|---|
-| [macOS Apple Silicon (.dmg)](https://github.com/rewq0494/media-converter/releases/download/v1.1.0/Media-Converter-macOS-Apple-Silicon.dmg) | **M1 / M2 / M3 / M4** |
-| [Windows 64-bit (.exe)](https://github.com/rewq0494/media-converter/releases/download/v1.1.0/Media-Converter-Windows-Setup.exe) | Windows 10+ |
-
-**macOS Installation:**
-1. Download the `macOS Apple Silicon (.dmg)` installer
-2. Open the DMG, drag **Media Converter.app** to Applications
-3. First launch: if you see **"Apple cannot verify"** warning, fix it with either:
-
-   **Option A (recommended):** Open Terminal and run once:
-   ```bash
-   xattr -cr /Applications/Media\ Converter.app
-   ```
-
-   **Option B:** Go to **System Settings → Privacy & Security** → scroll to "Security" → click **"Open Anyway"**
-
-> ⚠️ This happens because the app isn't signed with a paid Apple Developer account — common for all open-source macOS desktop apps. It is NOT malware.
-
-**Windows Installation:**
-1. Download the `.exe` installer
-2. Double-click to install
-3. If SmartScreen warning appears, click "More info" → "Run anyway"
+**Local installation:** Move `dist/local/mac-arm64/Media Converter.app` to Applications after building. This local edition uses ad-hoc signing and is not notarized.
 
 ### 🛠 Development Setup
 
@@ -227,7 +183,7 @@ git clone https://github.com/rewq0494/media-converter.git
 cd media-converter
 npm install   # install dependencies
 npm start     # run in development mode
-npm test      # run 46 TDD tests
+npm test      # run 66 unit tests
 ```
 
 ### 📦 Build
@@ -255,7 +211,7 @@ media-converter/
 │   ├── styles.css       # Dark/light theme (follows system)
 │   ├── renderer.js      # UI logic
 │   └── i18n.js          # zh-TW / EN translations
-└── tests/               # 46 unit + boundary tests (Jest)
+└── tests/               # 66 unit + boundary tests (Jest)
 ```
 
 ### 🧪 Testing
@@ -263,7 +219,7 @@ media-converter/
 Developed with **TDD**. Tests cover file detection, format presets, ffmpeg argument building, and progress parsing — including edge cases.
 
 ```bash
-npm test   # Tests: 46 passed, 46 total
+npm test   # Tests: 66 passed, 66 total
 ```
 
 ### ⚖ Legal & Licensing
@@ -303,3 +259,5 @@ GNU General Public License v3.0 — see [LICENSE](LICENSE)
 ## 批次處理
 
 轉換格式、壓縮影片都可一次拖入多檔，或在選擇檔案時多選。可繼續加入、移出清單；同批使用相同設定，依序執行以控制資源使用。混合音訊與影片轉檔時僅提供音訊輸出格式。壓縮模式會略過音訊或無法辨識的檔案並顯示原因。單筆失敗會繼續後續工作；「停止整批」會中止目前與後續工作，保留已完成結果。
+
+批次與介面回歸測試：`node node_modules/@playwright/test/cli.js test tests/e2e.spec.js tests/modes.spec.js --workers=1`（33 個測試）；另有 66 個 Jest 測試。
