@@ -299,3 +299,7 @@ GNU General Public License v3.0 — see [LICENSE](LICENSE)
 執行 `npm run build:local`，輸出 `dist/local/mac-arm64/Media Converter.app`。Electron 僅保留英文內建語系，應用介面仍支援繁體中文與英文，不製作 DMG、不內附 FFmpeg/FFprobe，也不需要開發者憑證。共用 `/opt/homebrew/bin` 或 `/usr/local/bin` 已安裝的 Homebrew FFmpeg；Finder 啟動不依賴 shell PATH。請保留本機 FFmpeg 安裝，缺少工具時會顯示錯誤。既有 `build:mac` / `build:win` 仍製作可攜版。建置不自動清理其他舊版產物。
 
 「更小檔案」採用 CRF 28、最高 720p，其餘相同。兩種模式皆保留原檔，完成後顯示實際大小差異。取消會停止 FFmpeg，可能留下未完成的輸出副本。
+
+## 批次處理
+
+轉換格式、壓縮影片都可一次拖入多檔，或在選擇檔案時多選。可繼續加入、移出清單；同批使用相同設定，依序執行以控制資源使用。混合音訊與影片轉檔時僅提供音訊輸出格式。壓縮模式會略過音訊或無法辨識的檔案並顯示原因。單筆失敗會繼續後續工作；「停止整批」會中止目前與後續工作，保留已完成結果。

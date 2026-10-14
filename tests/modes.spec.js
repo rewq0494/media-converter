@@ -15,7 +15,7 @@ test.beforeAll(() => {
   execFileSync(ffmpeg, ['-v','error','-n','-stream_loop','9','-i',video,'-c','copy',longVideo]);
 });
 test.beforeEach(async () => {
-  app = await electron.launch({args:[root]});
+  app = await electron.launch(process.env.MEDIA_CONVERTER_APP ? {executablePath: process.env.MEDIA_CONVERTER_APP, args: []} : {args:[root]});
   page = await app.firstWindow();
   await page.waitForFunction(() => document.getElementById('heroTitle').textContent.length > 0);
   await page.evaluate(() => window.i18n.setLang('zh-TW'));
@@ -90,4 +90,52 @@ test('compact dark layout keeps modes and actions accessible', async () => {
   await loadVideo();
   await expect(page.locator('#convertBtn')).toBeInViewport();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('batch compression keeps same-name sources separate and shows both results', async () => {
+  const sub = path.join(dir, 'same-name'); fs.mkdirSync(sub, {recursive:true});
+  const second = path.join(sub, path.basename(video)); fs.copyFileSync(video, second);
+  await page.locator('#modeCompress').click();
+  await page.locator('#fileInput').setInputFiles([video, second]);
+  await expect(page.locator('.selection-row')).toHaveCount(2);
+  // Adding an already selected path must not duplicate a job.
+  await page.locator('#fileInput').setInputFiles(video);
+  await expect(page.locator('.selection-row')).toHaveCount(2);
+  await page.locator('#nextBtn').click();
+  await page.locator('#changeDirBtn').click();
+  await page.locator('#convertBtn').click();
+  await expect(page.locator('#doneSection')).toBeVisible({timeout:30000});
+  await expect(page.locator('.batch-row.done')).toHaveCount(2);
+  await expect(page.locator('[data-reveal]')).toHaveCount(2);
+  expect(fs.existsSync(video) && fs.existsSync(second)).toBe(true);
+});
+test('batch conversion supports mixed inputs, removal and continues after a failed item', async () => {
+  const missing = path.join(dir,'missing.mp4'); fs.copyFileSync(video,missing);
+  await page.locator('#fileInput').setInputFiles([missing, audio, video]);
+  await expect(page.locator('.selection-row')).toHaveCount(3);
+  await page.locator('[data-remove="2"]').click();
+  await expect(page.locator('.selection-row')).toHaveCount(2);
+  await page.locator('#nextBtn').click();
+  await expect(page.locator('[data-ext="mp4"]')).toHaveCount(0);
+  await page.locator('[data-ext="mp3"]').click();
+  await page.locator('#changeDirBtn').click();
+  fs.renameSync(missing, missing+'.moved');
+  await page.locator('#convertBtn').click();
+  await expect(page.locator('#doneSection')).toBeVisible({timeout:30000});
+  await expect(page.locator('.batch-row.failed')).toHaveCount(1);
+  await expect(page.locator('.batch-row.done')).toHaveCount(1);
+  await expect(page.locator('#batchSummary')).toContainText('失敗 1');
+});
+test('stopping a batch stops the current item and leaves the next one pending', async () => {
+  await page.locator('#modeCompress').click();
+  await page.locator('#fileInput').setInputFiles([longVideo, video]);
+  await page.locator('#nextBtn').click();
+  await page.locator('#changeDirBtn').click();
+  await page.locator('#convertBtn').click();
+  await expect(page.locator('.batch-row.running')).toHaveCount(1);
+  await page.locator('#cancelBtn').click();
+  await expect(page.locator('#doneSection')).toBeVisible({timeout:30000});
+  await expect(page.locator('.batch-row.pending')).toHaveCount(1);
+  await expect(page.locator('#doneTitle')).toHaveText('已停止整批');
+  await expect(page.locator('#modeConvert')).toBeEnabled();
 });

@@ -54,7 +54,7 @@
       <div id="fileInfo" style="display:none"></div>
       <p class="inline-error" id="fileError" role="alert" hidden></p>
       <p class="privacy-note" data-i18n="privacyNote">⌁ 檔案不離開這台 Mac，原檔也會好好保留。</p>
-      <input type="file" id="fileInput" accept="video/*,audio/*,.mkv,.flac,.ogg,.opus,.wma,.m4a,.webm" style="display:none">
+      <input type="file" id="fileInput" multiple accept="video/*,audio/*,.mkv,.flac,.ogg,.opus,.wma,.m4a,.webm" style="display:none">
     </div>
 
     <!-- Step 2: Settings -->
@@ -89,6 +89,7 @@
 
     <!-- Step 3: Progress / Done / Error -->
     <div class="step-panel" id="step3Panel">
+      <section id="batchPanel" hidden><h2 id="batchTitle"></h2><p id="batchSummary" aria-live="polite"></p><div id="batchList" class="batch-list"></div></section>
       <div class="center-section" id="progressSection">
         <div class="prog-icon spin" aria-hidden="true">✳</div>
         <h2 class="prog-title" id="progressTitle">轉換中…</h2>

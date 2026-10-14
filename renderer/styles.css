@@ -521,3 +521,23 @@ h1 { font-size:28px; font-weight:720; letter-spacing:-.7px; line-height:1.3; }
 
 .profile-card.selected::after { content:'✓'; position:absolute; bottom:17px; right:17px; color:var(--accent); font-weight:800; }
 .profile-card small { padding-right:18px; }
+
+/* Batch selection and results */
+.selection-list,.batch-list { max-height:260px; overflow-y:auto; margin:12px 0; }
+.selection-row,.batch-row { display:flex; gap:12px; align-items:center; border-bottom:1px solid var(--border); padding:12px 4px; text-align:left; }
+.selection-row > div,.batch-row > div { flex:1; min-width:0; }
+.selection-row strong,.batch-row strong { display:block; font-size:12px; overflow-wrap:anywhere; }
+.selection-row small,.batch-row small { display:block; font-size:11px; color:var(--text-2); overflow-wrap:anywhere; }
+.batch-status { font-size:11px; white-space:nowrap; color:var(--text-2); }
+.batch-number { color:var(--text-3); font-size:12px; }
+.batch-row.done .batch-status { color:var(--success); }
+.batch-row.failed .batch-status { color:var(--danger); }
+.batch-row.running { background:color-mix(in srgb,var(--accent) 7%,transparent); }
+#batchPanel { background:var(--surface); padding:18px; border:1px solid var(--border); border-radius:16px; }
+#batchTitle { font-size:19px; }
+#batchSummary { color:var(--text-2); font-size:12px; margin-top:5px; }
+#batchPanel:not([hidden]) ~ .center-section { min-height:180px; padding:18px 10px; }
+#batchPanel:not([hidden]) ~ .center-section .prog-icon { display:none; }
+#batchPanel:not([hidden]) ~ .center-section .prog-title { font-size:14px; overflow-wrap:anywhere; }
+#sizeResult:empty { display:none; }
+.inline-error { white-space:pre-wrap; }

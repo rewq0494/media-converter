@@ -1,6 +1,7 @@
 (function () {
 'use strict';
 const state = {
+  files: [], activeIndex: -1,
   step: 1, mode: 'convert', profile: 'balanced', tab: 'all',
   filePath: null, fileInfo: null, selectedFormat: null, advancedOptions: {},
   outputDir: null, outputPath: null, busy: false, detecting: false, cancelRequested: false,
@@ -24,6 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.i18n.setLang(window.i18n.getLang() === 'zh-TW' ? 'en' : 'zh-TW');
     renderLabels();
     if (state.fileInfo) renderFileInfo();
+    renderBatch();
     if (state.step === 2) renderSettingsStep();
   });
   $('backBtn').addEventListener('click', () => goToStep(1));
@@ -49,6 +51,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!state.busy) return;
     $('progressBar').style.width = `${data.pct}%`;
     $('progressPct').textContent = `${data.pct}%`;
+    if (state.files.length > 1 && state.activeIndex >= 0) {
+      state.files[state.activeIndex].pct = data.pct;
+      renderBatch();
+    }
   });
   renderLabels();
   goToStep(1);
@@ -73,7 +79,9 @@ function renderLabels() {
   $('fileInput').accept = compress ? 'video/*,.mkv,.webm,.avi' : 'video/*,audio/*,.mkv,.flac,.ogg,.opus,.wma,.m4a,.webm';
   $('progressTitle').textContent = t(compress ? 'compressProgress' : 'convertProgress');
   $('doneTitle').textContent = t(compress ? 'compressDone' : 'convertDone');
-  $('langToggle').disabled = state.busy;
+  if (state.files.length > 1 && state.step === 3 && !state.busy) $('doneTitle').textContent = t(state.cancelRequested ? 'batchStopped' : 'batchFinished');
+  $('langToggle').disabled = state.busy || state.detecting;
+  $('cancelBtn').textContent = t(state.files.length > 1 ? 'stopBatch' : 'btnCancel');
 }
 
 function selectMode(mode) {
@@ -82,7 +90,7 @@ function selectMode(mode) {
   state.selectedFormat = null;
   state.advancedOptions = {};
   state.outputPath = null;
-  const incompatible = mode === 'compress' && state.fileInfo && !state.fileInfo.video;
+  const incompatible = mode === 'compress' && state.files.some(file => !file.info.video);
   if (state.step === 3 || incompatible) resetToStep1();
   renderLabels();
   if (incompatible) showFileError(t('videoRequired'));
@@ -106,57 +114,67 @@ function setupDragDrop() {
   zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
   zone.addEventListener('drop', async e => {
     e.preventDefault(); zone.classList.remove('drag-over');
-    const file = e.dataTransfer.files[0];
-    if (file) await handleFileDetect(window.api.getPathForFile(file));
+    await handleFiles(Array.from(e.dataTransfer.files).map(file => window.api.getPathForFile(file)));
   });
   zone.addEventListener('click', () => { if (!state.detecting) input.click(); });
   zone.addEventListener('keydown', e => {
     if (e.target === zone && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); input.click(); }
   });
   input.addEventListener('change', async e => {
-    const file = e.target.files[0];
-    if (file) await handleFileDetect(window.api.getPathForFile(file));
+    await handleFiles(Array.from(e.target.files).map(file => window.api.getPathForFile(file)));
     input.value = '';
   });
 }
 
 function showFileError(message) { $('fileError').textContent = message; $('fileError').hidden = false; }
-async function handleFileDetect(filePath) {
-  if (state.detecting || state.busy) return;
-  if (!filePath) { showFileError(t('detectFailed')); return; }
+async function handleFiles(paths) {
+  if (state.detecting || state.busy || !paths.length) return;
   state.detecting = true;
   $('fileError').hidden = true;
   $('dropZone').style.display = 'none';
   $('fileInfo').style.display = '';
   $('fileInfo').textContent = t('detecting');
   renderLabels();
-  try {
-    const result = await window.api.detectFile(filePath);
-    if (!result.success) throw new Error(result.error);
-    if (state.mode === 'compress' && !result.data.video) throw new Error(t('videoRequired'));
-    state.filePath = filePath;
-    state.fileInfo = result.data;
-    state.selectedFormat = null;
-    state.advancedOptions = {};
-    renderFileInfo();
-  } catch (err) {
-    $('dropZone').style.display = '';
-    $('fileInfo').style.display = 'none';
-    showFileError(err.message);
-  } finally {
-    state.detecting = false;
-    renderLabels();
+  const errors = [];
+  for (const filePath of paths) {
+    if (state.files.some(file => file.path === filePath)) continue;
+    try {
+      const result = await window.api.detectFile(filePath);
+      if (!result.success) throw new Error(result.error);
+      if (state.mode === 'compress' && !result.data.video) throw new Error(t('videoRequired'));
+      state.files.push({ path: filePath, info: result.data, status: 'pending', pct: 0 });
+    } catch (err) { errors.push(`${filePart(filePath)}: ${err.message}`); }
   }
+  state.detecting = false;
+  syncSelection();
+  if (errors.length) showFileError(errors.join('\n'));
+  renderLabels();
+}
+
+function syncSelection() {
+  state.filePath = state.files[0]?.path || null;
+  state.fileInfo = state.files[0]?.info || null;
+  state.selectedFormat = null;
+  state.advancedOptions = {};
+  $('dropZone').style.display = state.files.length ? 'none' : '';
+  $('fileInfo').style.display = state.files.length ? '' : 'none';
+  if (state.files.length) renderFileInfo();
 }
 
 function renderFileInfo() {
-  const info = state.fileInfo;
-  $('fileInfo').innerHTML = `<div class="file-ready"><span class="ready-icon" aria-hidden="true">✓</span><div><div class="file-name">${esc(filePart(state.filePath))}</div><div class="meta-chips"><span class="meta-chip">${fmtSize(info.size)}</span><span class="meta-chip">${fmtDuration(info.duration)}</span>${info.video ? `<span class="meta-chip">${info.video.width} × ${info.video.height}</span>` : ''}</div></div></div><div class="file-actions"><button class="btn-secondary btn-sm" id="changeFileBtn">${t('fileInfoChange')}</button><button class="btn-primary" id="nextBtn">${t('fileInfoNext')}</button></div>`;
+  const total = state.files.reduce((sum, file) => sum + file.info.size, 0);
+  $('fileInfo').innerHTML = `<div class="file-name">${state.files.length} ${t('fileCount')} · ${fmtSize(total)}</div><div class="selection-list">${state.files.map((file, index) => `<div class="selection-row"><div><strong>${esc(filePart(file.path))}</strong><small>${fmtSize(file.info.size)} · ${fmtDuration(file.info.duration)}</small></div><button class="btn-secondary btn-sm" data-remove="${index}" aria-label="${t('removeFromList')} ${esc(filePart(file.path))}">${t('removeFromList')}</button></div>`).join('')}</div><p class="preset-desc">${t('batchHint')}</p><div class="file-actions"><button class="btn-secondary btn-sm" id="changeFileBtn">${t('clearList')}</button><button class="btn-secondary btn-sm" id="addFilesBtn">${t('addFiles')}</button><button class="btn-primary" id="nextBtn">${t('fileInfoNext')}</button></div>`;
   $('changeFileBtn').addEventListener('click', resetToStep1);
+  $('addFilesBtn').addEventListener('click', () => $('fileInput').click());
+  $('fileInfo').querySelectorAll('[data-remove]').forEach(btn => btn.addEventListener('click', () => {
+    state.files.splice(Number(btn.dataset.remove), 1); syncSelection();
+  }));
   $('nextBtn').addEventListener('click', () => { renderSettingsStep(); goToStep(2); });
 }
 
 function resetToStep1() {
+  $('openFolderBtn').hidden = false;
+  state.files = []; state.activeIndex = -1; $('batchPanel').hidden = true;
   state.filePath = null; state.fileInfo = null; state.selectedFormat = null;
   state.advancedOptions = {}; state.outputPath = null;
   $('dropZone').style.display = '';
@@ -174,14 +192,14 @@ function renderSettingsStep() {
   $('settingsEyebrow').textContent = t(compress ? 'modeCompress' : 'modeConvert');
   $('settingsTitle').textContent = t(compress ? 'settingsCompress' : 'settingsConvert');
   $('taskBadge').textContent = compress ? 'MP4' : '⇄';
-  $('sourceName').textContent = filePart(state.filePath);
-  $('sourceMeta').textContent = `${fmtSize(state.fileInfo.size)} · ${fmtDuration(state.fileInfo.duration)}`;
+  $('sourceName').textContent = state.files.length > 1 ? `${state.files.length} ${t('fileCount')}` : filePart(state.filePath);
+  $('sourceMeta').textContent = `${fmtSize(state.files.reduce((sum, file) => sum + file.info.size, 0))} · ${t('batchHint')}`;
   $('convertBtn').textContent = t(compress ? 'compressAction' : 'convertAction');
   if (compress) {
     state.selectedFormat = 'mp4';
     renderCompression();
   } else {
-    if (!state.fileInfo.video) state.tab = 'audio';
+    if (state.files.some(file => !file.info.video)) state.tab = 'audio';
     renderFormatTabs();
     renderFormatGrid();
     renderAdvancedPanel();
@@ -200,7 +218,7 @@ function renderCompression() {
 }
 
 function renderFormatTabs() {
-  const tabs = state.fileInfo.video ? [['all', 'tabAll'], ['video', 'tabVideo'], ['audio', 'tabAudio']] : [['audio', 'tabAudio']];
+  const tabs = state.files.every(file => file.info.video) ? [['all', 'tabAll'], ['video', 'tabVideo'], ['audio', 'tabAudio']] : [['audio', 'tabAudio']];
   $('formatTabs').innerHTML = tabs.map(([id, key]) => `<button class="tab-btn${state.tab === id ? ' active' : ''}" data-tab="${id}" aria-pressed="${state.tab === id}">${t(key)}</button>`).join('');
   $('formatTabs').querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => {
     state.tab = btn.dataset.tab;
@@ -210,7 +228,7 @@ function renderFormatTabs() {
 
 async function renderFormatGrid() {
   const request = ++formatRequest;
-  let formats = await window.api.getOutputFormats(state.fileInfo?.video ? 'video' : 'audio') || [];
+  let formats = await window.api.getOutputFormats(state.files.every(file => file.info.video) ? 'video' : 'audio') || [];
   if (request !== formatRequest || state.mode !== 'convert') return;
   if (state.tab !== 'all') formats = formats.filter(f => f.type === state.tab);
   const en = window.i18n.getLang() === 'en';
@@ -257,6 +275,8 @@ function showStep3(mode) {
 
 async function startConversion() {
   if (state.busy || !state.selectedFormat || !state.filePath || !state.outputDir) return;
+  if (state.files.length > 1) return startBatch();
+  $('batchPanel').hidden = true;
   state.busy = true; state.cancelRequested = false;
   $('cancelBtn').disabled = false;
   $('progressBar').style.width = '0%'; $('progressPct').textContent = '0%';
@@ -283,6 +303,52 @@ async function startConversion() {
     clearInterval(timer); state.busy = false; renderLabels();
   }
 }
+function renderBatch() {
+  if (state.files.length < 2) return;
+  $('batchTitle').textContent = t(state.busy ? 'batchWorking' : 'batchFinished');
+  const count = status => state.files.filter(file => file.status === status).length;
+  $('batchSummary').textContent = `${t('successCount')} ${count('done')} / ${state.files.length} · ${t('failureCount')} ${count('failed')} · ${t('remainingCount')} ${count('pending') + count('cancelled')}`;
+  $('batchList').innerHTML = state.files.map((file, index) => `<div class="batch-row ${file.status}"><span class="batch-number">${index + 1}</span><div><strong>${esc(filePart(file.path))}</strong><small>${file.result ? `${fmtSize(file.result.inputSize)} → ${fmtSize(file.result.outputSize)}` : esc(file.error || '')}</small></div><span class="batch-status">${t('status_' + file.status)}${file.status === 'running' ? ` ${file.pct}%` : ''}</span>${file.result ? `<button class="btn-secondary btn-sm" data-reveal="${index}">${t('revealFile')}</button>` : ''}</div>`).join('');
+  $('batchList').querySelectorAll('[data-reveal]').forEach(btn => btn.addEventListener('click', () => window.api.openFolder(state.files[Number(btn.dataset.reveal)].result.outputPath)));
+}
+
+async function startBatch() {
+  state.busy = true; state.cancelRequested = false; state.outputPath = null;
+  state.files.forEach(file => { file.status = 'pending'; file.pct = 0; file.error = ''; file.result = null; });
+  $('batchPanel').hidden = false;
+  $('cancelBtn').disabled = false;
+  renderLabels(); goToStep(3); showStep3('progress'); renderBatch();
+  $('progressTime').textContent = '';
+  try {
+    for (let index = 0; index < state.files.length; index++) {
+      if (state.cancelRequested) break;
+      const file = state.files[index];
+      state.activeIndex = index; file.status = 'running';
+      $('progressBar').style.width = '0%'; $('progressPct').textContent = '0%';
+      $('progressTitle').textContent = `${index + 1} / ${state.files.length} · ${filePart(file.path)}`;
+      renderBatch();
+      try {
+        const result = await window.api.startConversion({ inputPath: file.path, outputDir: state.outputDir, outputExt: state.selectedFormat,
+          options: state.mode === 'compress' ? { compression: true, compressionProfile: state.profile } : { ...state.advancedOptions },
+          duration: file.info.duration || 0 });
+        // A completed output is retained even if Stop was clicked just as it finished.
+        if (result.success) { file.status = 'done'; file.result = result; state.outputPath = result.outputPath; }
+        else if (state.cancelRequested) file.status = 'cancelled';
+        else { file.status = 'failed'; file.error = result.error; }
+      } catch (err) { file.status = state.cancelRequested ? 'cancelled' : 'failed'; file.error = err.message; }
+      renderBatch();
+    }
+  } finally {
+    state.busy = false; state.activeIndex = -1;
+    renderLabels(); renderBatch(); showStep3('done');
+    $('doneTitle').textContent = t(state.cancelRequested ? 'batchStopped' : 'batchFinished');
+    $('outFilePath').textContent = '';
+    $('sizeResult').innerHTML = '';
+    $('resultHint').textContent = t(state.cancelRequested ? 'batchStopHint' : 'batchDoneHint');
+    $('openFolderBtn').hidden = !state.outputPath;
+  }
+}
+
 function fmtDuration(sec) {
   if (!Number.isFinite(sec)) return '--';
   const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = Math.floor(sec % 60);
